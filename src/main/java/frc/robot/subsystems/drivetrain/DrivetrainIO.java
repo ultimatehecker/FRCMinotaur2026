@@ -52,13 +52,13 @@ public interface DrivetrainIO {
         public double driveSupplyCurrentAmperes = 0.0;
         public double driveStatorCurrentAmperes = 0.0;
         public double driveAppliedVoltage = 0.0;
-        public double driveTempuratureCelsius = 0.0;
+        public double driveTemperatureCelsius = 0.0;
 
         public boolean isSteerConnected = false;
         public double steerSupplyCurrentAmperes = 0.0;
         public double steerStatorCurrentAmperes = 0.0;
         public double steerAppliedVoltage = 0.0;
-        public double steerTempuratureCelsius = 0.0;
+        public double steerTemperatureCelsius = 0.0;
     }
 
     public void updateDrivetrainInputs(DrivetrainIOInputs inputs);
@@ -69,11 +69,11 @@ public interface DrivetrainIO {
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier, Subsystem subsystemRequired);
 
-    public void setCOF(Translation2d cor);
+    public void setCOR(Translation2d cor);
 
     public Translation2d getCOR();
 
-    public void setBrakeMade();
+    public void setBrakeMode(boolean enable);
 
     public void setTargetChassisSpeeds(ChassisSpeeds targetChassisSpeeds);
 
