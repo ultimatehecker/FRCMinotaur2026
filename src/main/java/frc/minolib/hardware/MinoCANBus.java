@@ -67,6 +67,7 @@ public class MinoCANBus {
 
   public void updateInputs() {
     CANBusStatus status = canBus.getStatus();
+
     inputs.status = status.Status;
     inputs.busUtilization = status.BusUtilization;
     inputs.busOffCount = status.BusOffCount;
