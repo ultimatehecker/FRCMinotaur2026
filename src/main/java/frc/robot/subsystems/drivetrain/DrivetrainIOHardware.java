@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.BaseStatusSignal;
@@ -21,13 +23,16 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
+
+import frc.minolib.localization.WeightedPoseEstimate;
+import frc.minolib.wpilib.RobotTime;
 
 public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder> implements DrivetrainIO {
     private HashMap<String, BaseStatusSignal> frontLeftSignals = new HashMap<>();
@@ -38,11 +43,11 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     private Map<Integer, HashMap<String, BaseStatusSignal>> signalsMap = new HashMap<>();
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
 
-    private Translation2d cor;
-    private ChassisSpeeds targetChassisSpeeds;
+    AtomicReference<SwerveDriveState> telemetryCache_ = new AtomicReference<>();
 
     public DrivetrainIOHardware(SwerveDrivetrainConstants constants, SwerveModuleConstants<?, ?, ?>... moduleConstants) {
         super(TalonFX::new, TalonFX::new, CANcoder::new, constants, moduleConstants);
+        this.resetRotation(Rotation2d.kZero);
 
         signalsMap.put(0, frontLeftSignals);
         signalsMap.put(1, frontRightSignals);
@@ -65,25 +70,21 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
             moduleMap.put("steerAppliedVoltage", steerMotor.getMotorVoltage());
             moduleMap.put("steerTemperatureCelsius", steerMotor.getDeviceTemp());
         }
-
-        this.cor = new Translation2d(0, 0);
-        this.targetChassisSpeeds = new ChassisSpeeds(0, 0, 0);
     }
+
+    Consumer<SwerveDriveState> telemetryConsumer_ = swerveDriveState -> {
+        telemetryCache_.set(swerveDriveState.clone());
+        robotState_.addOdometryMeasurement((RobotTime.getTimestampSeconds() - Utils.getCurrentTimeSeconds()) + swerveDriveState.Timestamp, swerveDriveState.Pose);
+    };
 
      @Override
     public void updateDrivetrainInputs(DrivetrainIOInputs inputs) {
         SwerveDriveState state = this.getStateCopy();
+        state.Speeds = ChassisSpeeds.fromRobotRelativeSpeeds(state.Speeds, state.Pose.getRotation());
         inputs.logState(state);
 
-        ChassisSpeeds measuredRobotRelativeChassisSpeeds = getKinematics().toChassisSpeeds(inputs.currentModuleStates);
-        ChassisSpeeds measuredFieldRelativeChassisSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(measuredRobotRelativeChassisSpeeds, inputs.Pose.getRotation());
-        ChassisSpeeds desiredRobotRelativeChassisSpeeds = getKinematics().toChassisSpeeds(inputs.referenceModuleStates);
-        ChassisSpeeds desiredFieldRelativeChassisSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(desiredRobotRelativeChassisSpeeds, inputs.Pose.getRotation());
-
-        inputs.measuredRobotRelativeChassisSpeeds = measuredRobotRelativeChassisSpeeds;
-        inputs.measuredFieldRelativeChassisSpeeds = measuredFieldRelativeChassisSpeeds;
-        inputs.referenceRobotRelativeChassisSpeeds = desiredRobotRelativeChassisSpeeds;
-        inputs.referenceFieldRelativeChassisSpeeds = desiredFieldRelativeChassisSpeeds;
+        var gyroRotation = inputs.Pose.getRotation();
+        inputs.gyroAngle = gyroRotation.getDegrees();
     }
 
     @Override
@@ -100,13 +101,7 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
             inputs[i].steerStatorCurrentAmperes = moduleMap.get("steerStatorCurrentAmperes").getValueAsDouble();
             inputs[i].steerAppliedVoltage = moduleMap.get("steerAppliedVoltage").getValueAsDouble();
             inputs[i].steerTemperatureCelsius = moduleMap.get("steerTemperatureCelsius").getValueAsDouble();
-
         }
-    }
-
-    @Override
-    public Translation2d getCOR() {
-        return cor;
     }
 
     @Override
@@ -131,20 +126,11 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     }
 
     @Override
-    public void setTargetChassisSpeeds(ChassisSpeeds targetChassisSpeeds) {
-        this.targetChassisSpeeds = targetChassisSpeeds;
-    }
-
-    @Override
-    public void addVisionMeasurement(VisionPoseEstimate visionFieldPoseEstimate) {
+    public void addVisionMeasurement(WeightedPoseEstimate visionFieldPoseEstimate) {
         if (visionFieldPoseEstimate.getVisionMeasurementStdDevs() == null) {
             this.addVisionMeasurement(visionFieldPoseEstimate.getVisionRobotPoseMeters(), Utils.fpgaToCurrentTime(visionFieldPoseEstimate.getTimestampSeconds()));
         } else {
-            this.addVisionMeasurement(
-                visionFieldPoseEstimate.getVisionRobotPoseMeters(),
-                Utils.fpgaToCurrentTime(visionFieldPoseEstimate.getTimestampSeconds()),
-                visionFieldPoseEstimate.getVisionMeasurementStdDevs()
-            );
+            this.addVisionMeasurement(visionFieldPoseEstimate.getVisionRobotPoseMeters(), Utils.fpgaToCurrentTime(visionFieldPoseEstimate.getTimestampSeconds()), visionFieldPoseEstimate.getVisionMeasurementStdDevs());
         }
     }
 
@@ -152,11 +138,6 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     public void setStateStandardDeviations(double xStd, double yStd, double rotStd) {
         Matrix<N3, N1> stateStdDevs = VecBuilder.fill(xStd, yStd, rotStd);
         this.setStateStdDevs(stateStdDevs);
-    }
-
-    @Override
-    public void setCOR(Translation2d cor) {
-        this.cor = cor;
     }
 
     @Override
