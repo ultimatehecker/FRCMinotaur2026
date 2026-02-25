@@ -40,8 +40,17 @@ public class DrivetrainConstants {
         new Translation2d(-kTrackWidth / 2.0, kWheelBase / 2.0),
         new Translation2d(-kTrackWidth / 2.0, -kWheelBase / 2.0)
     };
+
+    public final static double kDisabledDriveXStdDev = 1.0;
+    public final static double kDisabledDriveYStdDev = 1.0;
+    public final static double kDisabledDriveRotStdDev = 1.0;
+
+    public final static double kEnabledDriveXStdDev = 0.3;
+    public final static double kEnabledDriveYStdDev = 0.3;
+    public final static double kEnabledDriveRotStdDev = 0.3;
     
     public static final double kRobotMassKilograms = 25.00;
+    public static final double kRobotCOGHeight = 6;
     public static final double kRobotMOI = 6.883;
     public static final double kWheelCOF = 1.0;
     public static final RobotConfig kPathPlannerConfiguration = new RobotConfig(
