@@ -13,6 +13,8 @@ public class GlobalConstants {
     public static final double kCANivoreTimeThreshold = 0.5;
 
     public static final Mode kSimulationMode = Mode.SIM;
+    public static final boolean kUseMapleSim = true;
+    
     public static final Mode kCurrentMode = RobotBase.isReal() ? Mode.REAL : kSimulationMode;
     public static final boolean kTuningMode = true;
 
