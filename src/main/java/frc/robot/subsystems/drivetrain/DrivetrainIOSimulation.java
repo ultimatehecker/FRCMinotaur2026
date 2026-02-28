@@ -64,19 +64,19 @@ public class DrivetrainIOSimulation extends DrivetrainIOHardware {
         if(GlobalConstants.kUseMapleSim) {
             simulatedSwerveDrivetrain = new MapleSimulatedSwerveDrivetrain(
                 Seconds.of(kSimulationLoopPeriod), 
-                Kilogram.of(DrivetrainConstants.kRobotMassKilograms), 
+                DrivetrainConstants.kRobotMassKilograms, 
                 Inches.of(31), 
                 Inches.of(31), 
-                DCMotor.getKrakenX60Foc(1), 
-                DCMotor.getKrakenX44Foc(1), 
+                DrivetrainConstants.kDriveSimulatedGearbox, 
+                DrivetrainConstants.kSteerSimulatedGearbox, 
                 1.2, 
                 getModuleLocations(), 
                 getPigeon2(), 
                 getModules(), 
-                SimulationTunerConstants.FrontLeft,
-                SimulationTunerConstants.FrontRight,
-                SimulationTunerConstants.BackLeft,
-                SimulationTunerConstants.BackRight
+                SimulationTunerConstants.kFrontLeft,
+                SimulationTunerConstants.kFrontRight,
+                SimulationTunerConstants.kBackLeft,
+                SimulationTunerConstants.kBackRight
             );
 
             simulationNotifier = new Notifier(simulatedSwerveDrivetrain::update);
