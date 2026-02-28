@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.RobotBase;
+import frc.minolib.hardware.MinoCANBus;
 
 public class GlobalConstants {
     public static double kLoopBackTimeSeconds = 1.0;
@@ -12,11 +13,15 @@ public class GlobalConstants {
     public static final double kCANErrorTimeThreshold = 0.5; // Seconds to disable alert
     public static final double kCANivoreTimeThreshold = 0.5;
 
+    public static final double kOdometryFrequency = 100.0;
     public static final Mode kSimulationMode = Mode.SIM;
     public static final boolean kUseMapleSim = true;
     
     public static final Mode kCurrentMode = RobotBase.isReal() ? Mode.REAL : kSimulationMode;
     public static final boolean kTuningMode = true;
+
+    public static final MinoCANBus kCANivoreBus = new MinoCANBus("*");
+    public static final MinoCANBus kRioBus = new MinoCANBus("rio");
 
     public static enum Mode {
         REAL,

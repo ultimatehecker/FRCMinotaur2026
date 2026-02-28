@@ -6,7 +6,9 @@ import edu.wpi.first.units.measure.Time;
 
 public class ControllerConstants {
     public static final SimControllerType kSimControllerType = SimControllerType.XBOX;
-    public static final Time kPOVDebounceTimeSeconds = Seconds.of(0.1);
+    public static final Time kDebounceTimeSeconds = Seconds.of(0.1);
+
+    public static final double kControllerDeadband = 0.1;
 
     public enum SimControllerType {
         XBOX,
@@ -15,4 +17,7 @@ public class ControllerConstants {
     }
 
     public static final int kDriverControllerPort = 0;
+    public static final int kOperatorControllerPort = 1;
+    public static final int kDriverConsolePort = 2;
+    public static final int kOperatorConsolePort = 3;
 }
