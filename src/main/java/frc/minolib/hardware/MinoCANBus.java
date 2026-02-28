@@ -62,7 +62,7 @@ public class MinoCANBus {
   public MinoCANBus(final String canbusName) {
     this.canbusName = canbusName;
     loggingName = "Inputs/CANBus [" + canbusName + "]";
-    canBus = new CANBus(this.canbusName);
+    canBus = new CANBus(this.canbusName, "./logs/example.hoot");
   }
 
   public void updateInputs() {
@@ -82,5 +82,9 @@ public class MinoCANBus {
     }
 
     canivoreErrorAlert.set(!canivoreErrorTimer.hasElapsed(GlobalConstants.kCANivoreTimeThreshold));
+  }
+
+  public String getName() {
+    return canBus.getName();
   }
 }
