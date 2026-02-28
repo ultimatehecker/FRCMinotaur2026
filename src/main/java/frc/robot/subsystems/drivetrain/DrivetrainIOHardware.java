@@ -1,12 +1,19 @@
 package frc.robot.subsystems.drivetrain;
 
+import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix6.BaseStatusSignal;
+import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -21,28 +28,47 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.LinearAcceleration;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
+import frc.minolib.localization.WeightedPoseEstimate;
+import frc.minolib.wpilib.RobotTime;
+import frc.robot.RobotState;
+
 public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder> implements DrivetrainIO {
+    private RobotState robotState;
+
     private HashMap<String, BaseStatusSignal> frontLeftSignals = new HashMap<>();
     private HashMap<String, BaseStatusSignal> frontRightSignals = new HashMap<>();
     private HashMap<String, BaseStatusSignal> backLeftSignals = new HashMap<>();
     private HashMap<String, BaseStatusSignal> backRightSignals = new HashMap<>();
 
+    private final StatusSignal<AngularVelocity> angularPitchVelocity;
+    private final StatusSignal<AngularVelocity> angularRollVelocity;
+    private final StatusSignal<AngularVelocity> angularYawVelocity;
+    private final StatusSignal<Angle> roll;
+    private final StatusSignal<Angle> pitch;
+    private final StatusSignal<LinearAcceleration> accelerationX;
+    private final StatusSignal<LinearAcceleration> accelerationY;
+
     private Map<Integer, HashMap<String, BaseStatusSignal>> signalsMap = new HashMap<>();
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
 
-    private Translation2d cor;
-    private ChassisSpeeds targetChassisSpeeds;
+    AtomicReference<SwerveDriveState> telemetryCache = new AtomicReference<>();
 
-    public DrivetrainIOHardware(SwerveDrivetrainConstants constants, SwerveModuleConstants<?, ?, ?>... moduleConstants) {
+    public DrivetrainIOHardware(RobotState robotState, SwerveDrivetrainConstants constants, SwerveModuleConstants<?, ?, ?>... moduleConstants) {
         super(TalonFX::new, TalonFX::new, CANcoder::new, constants, moduleConstants);
+        this.resetRotation(Rotation2d.kZero);
+        this.robotState = robotState;
 
         signalsMap.put(0, frontLeftSignals);
         signalsMap.put(1, frontRightSignals);
@@ -66,24 +92,74 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
             moduleMap.put("steerTemperatureCelsius", steerMotor.getDeviceTemp());
         }
 
-        this.cor = new Translation2d(0, 0);
-        this.targetChassisSpeeds = new ChassisSpeeds(0, 0, 0);
+        angularPitchVelocity = getPigeon2().getAngularVelocityYWorld();
+        angularRollVelocity = getPigeon2().getAngularVelocityXWorld();
+        angularYawVelocity = getPigeon2().getAngularVelocityZWorld();
+        roll = getPigeon2().getRoll();
+        pitch = getPigeon2().getPitch();
+        accelerationX = getPigeon2().getAccelerationX();
+        accelerationY = getPigeon2().getAccelerationY();
+
+        BaseStatusSignal.setUpdateFrequencyForAll(250, angularYawVelocity);
+        BaseStatusSignal.setUpdateFrequencyForAll(
+            100,
+            angularPitchVelocity,
+            angularRollVelocity,
+            roll,
+            pitch,
+            accelerationX,
+            accelerationY
+        );
+
+        this.getOdometryThread().setThreadPriority(99);
+        registerTelemetry(telemetryConsumer);
     }
 
      @Override
     public void updateDrivetrainInputs(DrivetrainIOInputs inputs) {
-        SwerveDriveState state = this.getStateCopy();
-        inputs.logState(state);
+        if (telemetryCache.get() == null) return;
+        inputs.logState(telemetryCache.get());
 
-        ChassisSpeeds measuredRobotRelativeChassisSpeeds = getKinematics().toChassisSpeeds(inputs.currentModuleStates);
-        ChassisSpeeds measuredFieldRelativeChassisSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(measuredRobotRelativeChassisSpeeds, inputs.Pose.getRotation());
-        ChassisSpeeds desiredRobotRelativeChassisSpeeds = getKinematics().toChassisSpeeds(inputs.referenceModuleStates);
-        ChassisSpeeds desiredFieldRelativeChassisSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(desiredRobotRelativeChassisSpeeds, inputs.Pose.getRotation());
+        var gyroRotation = inputs.Pose.getRotation();
+        inputs.gyroAngle = gyroRotation.getDegrees();
 
-        inputs.measuredRobotRelativeChassisSpeeds = measuredRobotRelativeChassisSpeeds;
-        inputs.measuredFieldRelativeChassisSpeeds = measuredFieldRelativeChassisSpeeds;
-        inputs.referenceRobotRelativeChassisSpeeds = desiredRobotRelativeChassisSpeeds;
-        inputs.referenceFieldRelativeChassisSpeeds = desiredFieldRelativeChassisSpeeds;
+        ChassisSpeeds measuredRobotRelativeChassisSpeeds = getKinematics().toChassisSpeeds(inputs.ModuleStates);
+        ChassisSpeeds measuredFieldRelativeChassisSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(measuredRobotRelativeChassisSpeeds, gyroRotation);
+        ChassisSpeeds desiredRobotRelativeChassisSpeeds = getKinematics().toChassisSpeeds(inputs.ModuleTargets);
+        ChassisSpeeds desiredFieldRelativeChassisSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(desiredRobotRelativeChassisSpeeds, gyroRotation);
+
+        double timestamp = RobotTime.getTimestampSeconds();
+        double rollRadiansPerSecond = angularRollVelocity.getValue().in(RadiansPerSecond);
+        double pitchRadiansPerSecond = angularPitchVelocity.getValue().in(RadiansPerSecond);
+        double yawRadiansPerSecond = angularYawVelocity.getValue().in(RadiansPerSecond);
+ 
+        var fusedFieldRelativeChassisSpeeds = new ChassisSpeeds(
+            measuredFieldRelativeChassisSpeeds.vxMetersPerSecond,
+            measuredFieldRelativeChassisSpeeds.vyMetersPerSecond,
+            yawRadiansPerSecond
+        );
+
+        double pitchRadians = pitch.getValue().in(Radians);
+        double rollRadians = roll.getValue().in(Radians);
+
+        double accelX = accelerationX.getValue().in(MetersPerSecondPerSecond);
+        double accelY = accelerationY.getValue().in(MetersPerSecondPerSecond);
+
+        robotState.addDriveMotionMeasurements(
+            timestamp,
+            yawRadiansPerSecond,
+            pitchRadiansPerSecond,
+            rollRadiansPerSecond,
+            pitchRadians,
+            rollRadians,
+            accelX,
+            accelY,
+            desiredRobotRelativeChassisSpeeds,
+            desiredFieldRelativeChassisSpeeds,
+            measuredRobotRelativeChassisSpeeds,
+            measuredFieldRelativeChassisSpeeds,
+            fusedFieldRelativeChassisSpeeds
+        );
     }
 
     @Override
@@ -100,13 +176,7 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
             inputs[i].steerStatorCurrentAmperes = moduleMap.get("steerStatorCurrentAmperes").getValueAsDouble();
             inputs[i].steerAppliedVoltage = moduleMap.get("steerAppliedVoltage").getValueAsDouble();
             inputs[i].steerTemperatureCelsius = moduleMap.get("steerTemperatureCelsius").getValueAsDouble();
-
         }
-    }
-
-    @Override
-    public Translation2d getCOR() {
-        return cor;
     }
 
     @Override
@@ -131,32 +201,23 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     }
 
     @Override
-    public void setTargetChassisSpeeds(ChassisSpeeds targetChassisSpeeds) {
-        this.targetChassisSpeeds = targetChassisSpeeds;
-    }
-
-    @Override
-    public void addVisionMeasurement(VisionPoseEstimate visionFieldPoseEstimate) {
+    public void addVisionMeasurement(WeightedPoseEstimate visionFieldPoseEstimate) {
         if (visionFieldPoseEstimate.getVisionMeasurementStdDevs() == null) {
             this.addVisionMeasurement(visionFieldPoseEstimate.getVisionRobotPoseMeters(), Utils.fpgaToCurrentTime(visionFieldPoseEstimate.getTimestampSeconds()));
         } else {
-            this.addVisionMeasurement(
-                visionFieldPoseEstimate.getVisionRobotPoseMeters(),
-                Utils.fpgaToCurrentTime(visionFieldPoseEstimate.getTimestampSeconds()),
-                visionFieldPoseEstimate.getVisionMeasurementStdDevs()
-            );
+            this.addVisionMeasurement(visionFieldPoseEstimate.getVisionRobotPoseMeters(), Utils.fpgaToCurrentTime(visionFieldPoseEstimate.getTimestampSeconds()), visionFieldPoseEstimate.getVisionMeasurementStdDevs());
         }
     }
+
+    Consumer<SwerveDriveState> telemetryConsumer = swerveDriveState -> {
+            telemetryCache.set(swerveDriveState.clone());
+            robotState.addOdometryMeasurement((RobotTime.getTimestampSeconds() - Utils.getCurrentTimeSeconds()) + swerveDriveState.Timestamp, swerveDriveState.Pose);
+        };
 
     @Override
     public void setStateStandardDeviations(double xStd, double yStd, double rotStd) {
         Matrix<N3, N1> stateStdDevs = VecBuilder.fill(xStd, yStd, rotStd);
         this.setStateStdDevs(stateStdDevs);
-    }
-
-    @Override
-    public void setCOR(Translation2d cor) {
-        this.cor = cor;
     }
 
     @Override

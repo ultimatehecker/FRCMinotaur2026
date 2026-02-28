@@ -6,6 +6,7 @@ import java.util.Map;
 public class ControllerMappings {
     public static final ControllerMapping XBOX_MAPPING;
     public static final ControllerMapping DUALSENSE_MAPPING;
+    public static final ControllerMapping VEX_MAPPING;
 
     static {
         Map<String, Integer> xboxButtons = new HashMap<>();
@@ -24,8 +25,8 @@ public class ControllerMappings {
         xboxAxes.put("LeftX", 0);
         xboxAxes.put("LeftY", 1);
         xboxAxes.put("RightX", 3);
-        xboxAxes.put("RightY", 5);
-        xboxAxes.put("RightTrigger", 4);
+        xboxAxes.put("RightY",4);
+        xboxAxes.put("RightTrigger", 5);
         xboxAxes.put("LeftTrigger", 2);
 
         XBOX_MAPPING = new ControllerMapping(xboxButtons, xboxAxes);
@@ -51,5 +52,24 @@ public class ControllerMappings {
         dualSenseAxes.put("RightTrigger", 3);
 
         DUALSENSE_MAPPING = new ControllerMapping(dualSenseButtons, dualSenseAxes);
+
+        Map<String, Integer> vexButtons = new HashMap<>();
+        vexButtons.put("A", 2);
+        vexButtons.put("B", 1);
+        vexButtons.put("X",4);
+        vexButtons.put("Y", 3);
+        vexButtons.put("LeftBumper1", 5);
+        vexButtons.put("RightBumper1", 6);
+        vexButtons.put("LeftBumper2", 7);
+        vexButtons.put("RightBumper2", 8);
+        vexButtons.put("Start", 9);
+
+        Map<String, Integer> vexAxes = new HashMap<>();
+        vexAxes.put("LeftX", 0);
+        vexAxes.put("LeftY", 1);
+        vexAxes.put("RightX", 2);
+        vexAxes.put("RightY", 3);
+
+        VEX_MAPPING = new ControllerMapping(vexButtons, vexAxes);
     }
 }

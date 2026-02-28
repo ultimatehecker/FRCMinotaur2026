@@ -6,43 +6,31 @@ import org.littletonrobotics.junction.AutoLog;
 
 import com.ctre.phoenix6.swerve.SwerveDrivetrain;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Translation2d;
-import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
-public interface DrivetrainIO {
+import frc.minolib.localization.WeightedPoseEstimate;
+import frc.minolib.utilities.SubsystemDataProcessor;
+
+public interface DrivetrainIO extends SubsystemDataProcessor.IODataRefresher {
     @AutoLog
-    public class DrivetrainIOInputs {
-        public Pose2d pose = new Pose2d();
-        public ChassisSpeeds measuredRobotRelativeChassisSpeeds = new ChassisSpeeds();
-        public ChassisSpeeds referenceRobotRelativeChassisSpeeds = new ChassisSpeeds();
-        public ChassisSpeeds measuredFieldRelativeChassisSpeeds = new ChassisSpeeds();
-        public ChassisSpeeds referenceFieldRelativeChassisSpeeds = new ChassisSpeeds();
-        public SwerveModuleState[] currentModuleStates;
-        public SwerveModuleState[] referenceModuleStates;
-        public SwerveModulePosition[] modulePositions;
-        public Rotation2d rawHeading = new Rotation2d();
-        public double timestamp;
-        public double odometryPeriod;
-        public int successfulDaqs;
-        public int failedDaqs;
+    public class DrivetrainIOInputs extends SwerveDriveState {
+        public double gyroAngle = 0.0;
+
+        public DrivetrainIOInputs() {
+            this.Pose = Pose2d.kZero;
+        }
 
         public void logState(SwerveDrivetrain.SwerveDriveState state) {
-            this.pose = state.Pose;
-            this.currentModuleStates = state.ModuleStates;
-            this.referenceModuleStates = state.ModuleTargets;
-            this.modulePositions = state.ModulePositions;
-            this.rawHeading = state.RawHeading;
-            this.timestamp = state.Timestamp;
-            this.odometryPeriod = state.OdometryPeriod;
-            this.successfulDaqs = state.SuccessfulDaqs;
-            this.failedDaqs = state.FailedDaqs;
+            this.Pose = state.Pose;
+            this.ModuleStates = state.ModuleStates;
+            this.ModuleTargets = state.ModuleTargets;
+            this.ModulePositions = state.ModulePositions;
+            this.Speeds = state.Speeds;
+            this.OdometryPeriod = state.OdometryPeriod;
         }
     }
 
@@ -69,25 +57,16 @@ public interface DrivetrainIO {
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier, Subsystem subsystemRequired);
 
-    public void setCOR(Translation2d cor);
-
-    public Translation2d getCOR();
-
     public void setBrakeMode(boolean enable);
-
-    public void setTargetChassisSpeeds(ChassisSpeeds targetChassisSpeeds);
 
     public default void updateSimulationState() {};
 
     public void setStateStandardDeviations(double xStandardDeviations, double yStandardDeviations, double rotationStandardDeviations);
 
-    public void addVisionMeasurement(); // do later because i dont feel like it
+    public void addVisionMeasurement(WeightedPoseEstimate visionFieldPoseEstimate); // do later because i dont feel like it
 
     public void resetOdometry(Pose2d pose);
 
-    // irl do this but again too lazy
-    /*
-     * @Override
-     * public void refreshData
-     */
+    @Override
+    public void refreshData(); 
 }

@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.TreeMap;
 
 import edu.wpi.first.math.Pair;
+import edu.wpi.first.math.interpolation.Interpolatable;
 
 public class DoubleInterpolatableTreeMap<T> {
+    /*
 
     private final TreeMap<Double, Interpolatable<T>> treeMap = new TreeMap<Double, Interpolatable<T>>();
 
@@ -51,4 +53,6 @@ public class DoubleInterpolatableTreeMap<T> {
             );
         }
     }
+
+    */
 }

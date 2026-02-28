@@ -21,6 +21,10 @@ public class CommandSimulatedXboxController extends CommandXboxController {
                 mapping = ControllerMappings.DUALSENSE_MAPPING;
                 m_hid = new SimulatedXboxController(port, mapping);
                 break;
+            case VEX:
+                mapping = ControllerMappings.VEX_MAPPING;
+                m_hid = new SimulatedXboxController(port, mapping);
+                break;
             default:
                 mapping = ControllerMappings.XBOX_MAPPING;
                 m_hid = new SimulatedXboxController(port, mapping);

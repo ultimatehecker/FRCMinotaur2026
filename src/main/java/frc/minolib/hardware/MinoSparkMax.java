@@ -5,8 +5,8 @@ import com.revrobotics.sim.SparkMaxSim;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.SparkBase.ControlType;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.PersistMode;
+import com.revrobotics.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.config.ClosedLoopConfig;
 import com.revrobotics.spark.config.MAXMotionConfig;
@@ -20,14 +20,13 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import frc.minolib.phoenix.MechanismRatio;
 import frc.minolib.rev.ClosedLoopConfiguration;
-import frc.minolib.rev.REVMotorController;
 import frc.minolib.io.MotorInputsAutoLogged;
 
 import java.util.function.Function;
 
 import org.littletonrobotics.junction.Logger;
 
-public class MinoSparkMax implements  AutoCloseable, REVMotorController {
+public class MinoSparkMax implements  AutoCloseable {
     private static final double kCANTimeoutS = 0.1; // s
     private final String name;
     private final String loggingName;
@@ -145,7 +144,7 @@ public class MinoSparkMax implements  AutoCloseable, REVMotorController {
             configuration.softLimit.reverseSoftLimitEnabled(REV_SOFT_LIMIT_ENABLED);
             configuration.softLimit.reverseSoftLimit(toNativeSensorPosition.apply(REV_SOFT_LIMIT));
 
-            configuration.closedLoop.maxMotion.maxVelocity(toNativeSensorVelocity.apply(maxMotionCruiseVelocity));
+            configuration.closedLoop.maxMotion.cruiseVelocity(toNativeSensorVelocity.apply(maxMotionCruiseVelocity));
             configuration.closedLoop.maxMotion.maxAcceleration(toNativeSensorVelocity.apply(maxMotionAcceleration));
 
             configuration.closedLoop.maxMotion.apply(slot0Configuration.fillREV(new MAXMotionConfig()));
