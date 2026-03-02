@@ -65,6 +65,11 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
 
     AtomicReference<SwerveDriveState> telemetryCache = new AtomicReference<>();
 
+    Consumer<SwerveDriveState> telemetryConsumer = swerveDriveState -> {
+        telemetryCache.set(swerveDriveState.clone());
+        robotState.addOdometryMeasurement((RobotTime.getTimestampSeconds() - Utils.getCurrentTimeSeconds()) + swerveDriveState.Timestamp, swerveDriveState.Pose);
+    };
+
     public DrivetrainIOHardware(RobotState robotState, SwerveDrivetrainConstants constants, SwerveModuleConstants<?, ?, ?>... moduleConstants) {
         super(TalonFX::new, TalonFX::new, CANcoder::new, constants, moduleConstants);
         this.resetRotation(Rotation2d.kZero);
@@ -208,11 +213,6 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
             this.addVisionMeasurement(visionFieldPoseEstimate.getVisionRobotPoseMeters(), Utils.fpgaToCurrentTime(visionFieldPoseEstimate.getTimestampSeconds()), visionFieldPoseEstimate.getVisionMeasurementStdDevs());
         }
     }
-
-    Consumer<SwerveDriveState> telemetryConsumer = swerveDriveState -> {
-            telemetryCache.set(swerveDriveState.clone());
-            robotState.addOdometryMeasurement((RobotTime.getTimestampSeconds() - Utils.getCurrentTimeSeconds()) + swerveDriveState.Timestamp, swerveDriveState.Pose);
-        };
 
     @Override
     public void setStateStandardDeviations(double xStd, double yStd, double rotStd) {

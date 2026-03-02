@@ -12,6 +12,7 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveRequest.ApplyRobotSpeeds;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
@@ -44,6 +45,7 @@ public class Drivetrain extends SubsystemBase {
     private ModuleIOInputsAutoLogged backRightInputs = new ModuleIOInputsAutoLogged();
 
     private final Object moduleIOLock = new Object();
+    private RobotConfig robotConfig;
 
     private final SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();
     private final ApplyRobotSpeeds pathplannerRequest = new ApplyRobotSpeeds()
@@ -60,6 +62,7 @@ public class Drivetrain extends SubsystemBase {
             }
         }, io);
 
+        io.setBrakeMode(true);
         configurePathPlanner();
     }
 
@@ -87,16 +90,25 @@ public class Drivetrain extends SubsystemBase {
     }
 
     private void configurePathPlanner() {
+
+        try{
+            robotConfig = RobotConfig.fromGUISettings();
+        } catch (Exception e) {
+            // Handle exception as needed
+            e.printStackTrace();
+        }
+
+
         AutoBuilder.configure(
-            robotState.getLatestFieldToRobot()::getValue,
+            () -> robotState.getLatestFieldToRobot().getValue(),
             this::resetOdometry,
-            robotState::getLatestFusedFieldRelativeChassisSpeeds,
+            robotState::getLatestDesiredRobotRelativeChassisSpeeds,
             (speeds, feedforwards) -> applyPathPlannerRequest(speeds, feedforwards.robotRelativeForcesX(), feedforwards.robotRelativeForcesY()),
             new PPHolonomicDriveController(
-                new PIDConstants(2.5, 0, 0), 
-                new PIDConstants(4.0, 0, 0)
-            ), 
-            DrivetrainConstants.kPathPlannerRobotConfiguration,
+                new PIDConstants(5.0, 0, 0), 
+                new PIDConstants(5.0, 0, 0)
+            ),
+            robotConfig,
             robotState::isRedAlliance,
             this
         );
