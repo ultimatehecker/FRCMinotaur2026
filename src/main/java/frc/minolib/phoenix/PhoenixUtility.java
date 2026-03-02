@@ -33,6 +33,13 @@ public class PhoenixUtility {
   private static Alert canivoreSignalsAlert = new Alert("", Alert.AlertType.kError);
   private static Alert rioSignalsAlert = new Alert("", Alert.AlertType.kError);
 
+  public static void simpleTryUntilOk(int maxAttempts, Supplier<StatusCode> command) {
+    for (int i = 0; i < maxAttempts; i++) {
+      var error = command.get();
+      if (error.isOK()) break;
+    }
+  }
+
   public static boolean retryUntilSuccess(final Supplier<StatusCode> setterFunction, final String description) {
     return retryUntilSuccess(setterFunction, () -> true, 10, description);
   }
