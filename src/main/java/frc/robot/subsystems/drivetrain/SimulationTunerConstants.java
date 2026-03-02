@@ -35,7 +35,7 @@ public class SimulationTunerConstants {
 
     // When using closed-loop control, the drive motor uses the control output type specified by SwerveModuleConstants.DriveMotorClosedLoopOutput
     private static final Slot0Configs driveGains = new Slot0Configs()
-        .withKP(10.0)
+        .withKP(1.0)
         .withKI(0.0)
         .withKD(0.0)
         .withKS(1.5)
@@ -43,10 +43,10 @@ public class SimulationTunerConstants {
 
     // The closed-loop output type to use for the steer motors;
     // This affects the PID/FF gains for the steer motors
-    private static final ClosedLoopOutputType kSteerClosedLoopOutput = ClosedLoopOutputType.TorqueCurrentFOC;
+    private static final ClosedLoopOutputType kSteerClosedLoopOutput = ClosedLoopOutputType.Voltage;
     // The closed-loop output type to use for the drive motors;
     // This affects the PID/FF gains for the drive motors
-    private static final ClosedLoopOutputType kDriveClosedLoopOutput = ClosedLoopOutputType.TorqueCurrentFOC;
+    private static final ClosedLoopOutputType kDriveClosedLoopOutput = ClosedLoopOutputType.Voltage;
 
     // The type of motor used for the drive motor
     private static final DriveMotorArrangement kDriveMotorType = DriveMotorArrangement.TalonFX_Integrated;
@@ -64,6 +64,10 @@ public class SimulationTunerConstants {
     // Initial configs for the drive and steer motors and the azimuth encoder; these cannot be null.
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
     private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration()
+        .withCurrentLimits(new CurrentLimitsConfigs()
+            .withSupplyCurrentLimit(Amps.of(80))
+            .withSupplyCurrentLimitEnable(true)
+        )
         .withMotorOutput(new MotorOutputConfigs()
             .withNeutralMode(NeutralModeValue.Brake)
         );
