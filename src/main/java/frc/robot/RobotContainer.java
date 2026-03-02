@@ -6,6 +6,12 @@ package frc.robot;
 
 import java.util.function.Consumer;
 
+import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 
@@ -34,6 +40,8 @@ public class RobotContainer {
   private CommandSimulatedXboxController driverController = new CommandSimulatedXboxController(ControllerConstants.kDriverControllerPort);
   private CommandSimulatedXboxController operatorController = new CommandSimulatedXboxController(ControllerConstants.kOperatorControllerPort);
 
+  private final LoggedDashboardChooser<Command> autoRegistry;
+
   private Drivetrain buildDrivetrain() {
     if(Robot.isSimulation()) {
       return new Drivetrain(
@@ -55,6 +63,7 @@ public class RobotContainer {
   public RobotContainer() {
     drivetrain = buildDrivetrain();
 
+    autoRegistry = new LoggedDashboardChooser<Command>("Auton Choices", AutoBuilder.buildAutoChooser());
     configureBindings();
   }
 
@@ -70,6 +79,6 @@ public class RobotContainer {
   }
 
   public Command getAutonomousCommand() {
-    return Commands.print("No autonomous command configured");
+    return autoRegistry.get();
   }
 }
