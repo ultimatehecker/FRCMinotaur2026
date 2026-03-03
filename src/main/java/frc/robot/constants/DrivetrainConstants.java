@@ -52,8 +52,8 @@ public class DrivetrainConstants {
     public static final double driveKp = 0.1;
     public static final double driveKi = 0.0;
     public static final double driveKd = 0.0;
-    public static final double driveKs = 0.124;
-    public static final double driveKv = 0.0;
+    public static final double driveKs = 0.0;
+    public static final double driveKv = 0.124;
     public static final double driveKa = 0.0;
     public static final double driveSimulatedKp = 10.0;
     public static final double driveSimulatedKi = 0.0;
@@ -71,11 +71,13 @@ public class DrivetrainConstants {
     public static final double steerKd = 0.5;
     public static final double steerKs = 0.1;
     public static final double steerKv = 1.79;
+    public static final double steerKa = 0.0;
     public static final double steerSimulatedKp = 100.0;
     public static final double steerSimulatedKi = 0.0;
     public static final double steerSimulatedKd = 0.5;
     public static final double steerSimulatedKs = 0.1;
     public static final double steerSimulatedKv = 0.0;
+    public static final double steerSimulatedKa = 0.0;
 
     public static final boolean kSteerMotorInverted = true;
     public static final double kSteerMotorReduction = kSwerveModuleType.getSteerReduction();
