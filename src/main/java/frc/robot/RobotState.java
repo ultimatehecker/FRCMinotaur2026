@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.ctre.phoenix6.sim.ChassisReference;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -236,5 +238,42 @@ public class RobotState {
 
     public boolean isRedAlliance() {
         return DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().equals(Optional.of(Alliance.Red));
+    }
+
+    public void updateLogger() {
+        if (this.driveYawAngularVelocity.getInternalBuffer().lastEntry() != null) {
+            Logger.recordOutput("RobotState/YawAngularVelocity", this.driveYawAngularVelocity.getInternalBuffer().lastEntry().getValue());
+        }
+        if (this.driveRollAngularVelocity.getInternalBuffer().lastEntry() != null) {
+            Logger.recordOutput("RobotState/RollAngularVelocity", this.driveRollAngularVelocity.getInternalBuffer().lastEntry().getValue());
+        }
+        if (this.drivePitchAngularVelocity.getInternalBuffer().lastEntry() != null) {
+            Logger.recordOutput("RobotState/PitchAngularVelocity", this.drivePitchAngularVelocity.getInternalBuffer().lastEntry().getValue());
+        }
+        if (this.drivePitchAngularPosition.getInternalBuffer().lastEntry() != null) {
+            Logger.recordOutput("RobotState/PitchPositionRadians", this.drivePitchAngularPosition.getInternalBuffer().lastEntry().getValue());
+        }
+        if (this.driveRollAngularPosition.getInternalBuffer().lastEntry() != null) {
+            Logger.recordOutput("RobotState/RollPositionRadians", this.driveRollAngularPosition.getInternalBuffer().lastEntry().getValue());
+        }
+        if (this.driveAccelerationX.getInternalBuffer().lastEntry() != null) {
+            Logger.recordOutput("RobotState/AccelerationX", this.driveAccelerationX.getInternalBuffer().lastEntry().getValue());
+        }
+        if (this.driveAccelerationY.getInternalBuffer().lastEntry() != null) {
+            Logger.recordOutput("RobotState/AccelerationY", this.driveAccelerationY.getInternalBuffer().lastEntry().getValue());
+        }
+        Logger.recordOutput("RobotState/DesiredChassisSpeedFieldFrame", getLatestDesiredFieldRelativeChassisSpeeds());
+        Logger.recordOutput("RobotState/DesiredChassisSpeedRobotFrame", getLatestDesiredRobotRelativeChassisSpeeds());
+        Logger.recordOutput("RobotState/MeasuredChassisSpeedFieldFrame", getLatestMeasuredFieldRelativeChassisSpeeds());
+        Logger.recordOutput("RobotState/FusedChassisSpeedFieldFrame", getLatestFusedFieldRelativeChassisSpeeds());
+    }
+
+    private final AtomicReference<Double> intakeRollerPosition = new AtomicReference<>(0.0);
+    private final AtomicReference<Double> intakeRollerVelocity = new AtomicReference<>(0.0);
+    private final AtomicReference<Double> intakePivotPosition = new AtomicReference<>(0.0);
+    private final AtomicReference<Double> intakePivotVelocity = new AtomicReference<>(0.0);
+
+    public void setIntakePivotRadians(double radians) {
+        intakePivotPosition.set(radians);
     }
 }
