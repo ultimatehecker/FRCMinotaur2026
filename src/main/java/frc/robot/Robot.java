@@ -36,7 +36,7 @@ public class Robot extends LoggedRobot {
         default -> "Unknown";
     });
 
-    switch(GlobalConstants.kCurrentMode) {
+    switch(GlobalConstants.getMode()) {
       case REAL:
         Logger.addDataReceiver(new WPILOGWriter());
         Logger.addDataReceiver(new NT4Publisher());
