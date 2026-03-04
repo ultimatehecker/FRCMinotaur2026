@@ -36,13 +36,13 @@ public interface IntakeIO {
 
     public default void setRollerVoltage(double voltage) {}
 
-    public default void setPivotPosition(double position) {}
+    public default void setPivotPosition(double position, double feedforward) {}
 
     public default void setRollerTorqueCurrent(double amperes) {}
 
-    public default void setRollerVelocity(double velocity) {}
-
     public default void stopRollers() {}
+
+    public default void setPivotPID(double kP, double kI, double kD) {}
 
     public default void setBrakeMode(boolean enabled) {}
 }
