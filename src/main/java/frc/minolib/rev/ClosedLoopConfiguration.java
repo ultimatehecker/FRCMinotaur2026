@@ -38,7 +38,7 @@ public class ClosedLoopConfiguration {
     }
 
     public MAXMotionConfig fillREV(MAXMotionConfig configuration) {
-        configuration.maxVelocity(mV);
+        configuration.cruiseVelocity(mV);
         configuration.maxAcceleration(mA);
         return configuration;
     }

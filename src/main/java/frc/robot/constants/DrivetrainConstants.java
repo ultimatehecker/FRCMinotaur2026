@@ -1,5 +1,6 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Kilogram;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
@@ -26,6 +27,7 @@ import edu.wpi.first.units.DimensionlessUnit;
 import edu.wpi.first.units.MutableMeasure;
 import edu.wpi.first.units.measure.AngularAcceleration;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Dimensionless;
 import edu.wpi.first.units.measure.Distance;
 import edu.wpi.first.units.measure.LinearAcceleration;
@@ -47,9 +49,39 @@ public class DrivetrainConstants {
     public static final AngularVelocity kMaximumRotationalVelocity = RadiansPerSecond.of(3 * Math.PI);
     public static final AngularAcceleration kMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6 * Math.PI);
 
+    public static final double driveKp = 0.1;
+    public static final double driveKi = 0.0;
+    public static final double driveKd = 0.0;
+    public static final double driveKs = 0.0;
+    public static final double driveKv = 0.124;
+    public static final double driveKa = 0.0;
+    public static final double driveSimulatedKp = 10.0;
+    public static final double driveSimulatedKi = 0.0;
+    public static final double driveSimulatedKd = 0.0;
+    public static final double driveSimulatedKs = 1.5;
+    public static final double driveSimulatedKv = 0.0;
+
+    public static final boolean kDriveMotorInverted = false;
     public static final double kDriveMotorReduction = kSwerveModuleType.getDriveReduction();
+    public static final Current kDriveMotorSupplyCurrentLimit = Amps.of(80);
     public static final DCMotor kDriveSimulatedGearbox = DCMotor.getKrakenX60Foc(1);
+
+    public static final double steerKp = 100.0;
+    public static final double steerKi = 0.0;
+    public static final double steerKd = 0.5;
+    public static final double steerKs = 0.1;
+    public static final double steerKv = 1.79;
+    public static final double steerKa = 0.0;
+    public static final double steerSimulatedKp = 100.0;
+    public static final double steerSimulatedKi = 0.0;
+    public static final double steerSimulatedKd = 0.5;
+    public static final double steerSimulatedKs = 0.1;
+    public static final double steerSimulatedKv = 0.0;
+    public static final double steerSimulatedKa = 0.0;
+
+    public static final boolean kSteerMotorInverted = true;
     public static final double kSteerMotorReduction = kSwerveModuleType.getSteerReduction();
+    public static final Current kSteerMotorStatorCurrentLimit = Amps.of(60);
     public static final DCMotor kSteerSimulatedGearbox = DCMotor.getKrakenX44Foc(1);
 
     public static final Distance kWheelRadius = Inches.of(1.897);
@@ -63,13 +95,21 @@ public class DrivetrainConstants {
         new Translation2d(-kTrackWidth.in(Meters) / 2.0, -kWheelBase.in(Meters) / 2.0)
     };
 
-    public final static double kDisabledDriveXStdDev = 1.0; 
-    public final static double kDisabledDriveYStdDev = 1.0;
-    public final static double kDisabledDriveRotStdDev = 1.0;
+    public static final double kDisabledDriveXStdDev = 1.0; 
+    public static final double kDisabledDriveYStdDev = 1.0;
+    public static final double kDisabledDriveRotStdDev = 1.0;
 
-    public final static double kEnabledDriveXStdDev = 0.3;
-    public final static double kEnabledDriveYStdDev = 0.3;
-    public final static double kEnabledDriveRotStdDev = 0.3;
+    public static final double kEnabledDriveXStdDev = 0.3;
+    public static final double kEnabledDriveYStdDev = 0.3;
+    public static final double kEnabledDriveRotStdDev = 0.3;
+
+    public static final double kPathPlannerDriveHolonomicControllerP = 5.0;
+    public static final double kPathPlannerDriveHolonomicControllerI = 0.0;
+    public static final double kPathPlannerDriveHolonomicControllerD = 0.0;
+
+    public static final double kPathPlannerSteerHolonomicControllerP = 5.0;
+    public static final double kPathPlannerSteerHolonomicControllerI = 0.0;
+    public static final double kPathPlannerSteerHolonomicControllerD = 0.0;
     
     public static final Mass kRobotMassKilograms = Kilograms.of(20.0);
     public static final Distance kRobotCOGHeight = Inches.of(6.0);
@@ -82,7 +122,7 @@ public class DrivetrainConstants {
         kMaximumLinearVelocity.in(MetersPerSecond), 
         kWheelCOF.in(Value), 
         kDriveSimulatedGearbox, 
-        40, 
+        kDriveMotorSupplyCurrentLimit.in(Amps), 
         1
     );
 

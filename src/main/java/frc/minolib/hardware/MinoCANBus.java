@@ -84,6 +84,10 @@ public class MinoCANBus {
     canivoreErrorAlert.set(!canivoreErrorTimer.hasElapsed(GlobalConstants.kCANivoreTimeThreshold));
   }
 
+  public CANBus getParent() {
+    return canBus;
+  }
+
   public String getName() {
     return canBus.getName();
   }

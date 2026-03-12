@@ -76,7 +76,7 @@ public class MapleSimulatedSwerveDrivetrain {
         Translation2d[] moduleLocations,
         Pigeon2 pigeon,
         SwerveModule<TalonFX, TalonFX, CANcoder>[] modules,
-        SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>... moduleConstants
+        @SuppressWarnings("unchecked") SwerveModuleConstants<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>... moduleConstants
     ) {
         this.pigeonSim = pigeon.getSimState();
         simModules = new SimSwerveModule[moduleConstants.length];

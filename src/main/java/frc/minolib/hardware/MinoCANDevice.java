@@ -13,7 +13,7 @@ public class MinoCANDevice {
     public int deviceNumber;
   
     /** The name of the CAN bus this device is on */
-    public final MinoCANBus CANbusName;
+    public final MinoCANBus CANBus;
   
     /**
      * Creates a new CAN device ID with specified device number and bus name.
@@ -23,7 +23,7 @@ public class MinoCANDevice {
      */
     public MinoCANDevice(final int deviceNumber, final MinoCANBus CANbusName) {
         this.deviceNumber = deviceNumber;
-        this.CANbusName = CANbusName;
+        this.CANBus = CANbusName;
     }
   
     /**
@@ -44,6 +44,6 @@ public class MinoCANDevice {
      */
     @Override
     public String toString() {
-        return "[" + CANbusName + " " + deviceNumber + "]";
+        return "[" + CANBus + " " + deviceNumber + "]";
     }
   }

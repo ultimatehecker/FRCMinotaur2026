@@ -12,10 +12,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.hardware.ParentDevice;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.hardware.traits.CommonTalon;
 import com.ctre.phoenix6.signals.NeutralModeValue;
@@ -47,11 +50,6 @@ import frc.robot.RobotState;
 public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CANcoder> implements DrivetrainIO {
     private RobotState robotState;
 
-    private HashMap<String, BaseStatusSignal> frontLeftSignals = new HashMap<>();
-    private HashMap<String, BaseStatusSignal> frontRightSignals = new HashMap<>();
-    private HashMap<String, BaseStatusSignal> backLeftSignals = new HashMap<>();
-    private HashMap<String, BaseStatusSignal> backRightSignals = new HashMap<>();
-
     private final StatusSignal<AngularVelocity> angularPitchVelocity;
     private final StatusSignal<AngularVelocity> angularRollVelocity;
     private final StatusSignal<AngularVelocity> angularYawVelocity;
@@ -60,7 +58,6 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     private final StatusSignal<LinearAcceleration> accelerationX;
     private final StatusSignal<LinearAcceleration> accelerationY;
 
-    private Map<Integer, HashMap<String, BaseStatusSignal>> signalsMap = new HashMap<>();
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
 
     AtomicReference<SwerveDriveState> telemetryCache = new AtomicReference<>();
@@ -71,31 +68,9 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     };
 
     public DrivetrainIOHardware(RobotState robotState, SwerveDrivetrainConstants constants, SwerveModuleConstants<?, ?, ?>... moduleConstants) {
-        super(TalonFX::new, TalonFX::new, CANcoder::new, constants, moduleConstants);
+        super(TalonFX::new, TalonFX::new, CANcoder::new, constants, 250.0, moduleConstants);
         this.resetRotation(Rotation2d.kZero);
         this.robotState = robotState;
-
-        signalsMap.put(0, frontLeftSignals);
-        signalsMap.put(1, frontRightSignals);
-        signalsMap.put(2, backLeftSignals);
-        signalsMap.put(3, backRightSignals);
-
-        for(int i = 0; i < 4; i++) {
-            CommonTalon driveMotor = this.getModule(i).getDriveMotor();
-            CommonTalon steerMotor = this.getModule(i).getSteerMotor();
-
-            var moduleMap = signalsMap.get(i);
-
-            moduleMap.put("driveSupplyCurrentAmperes", driveMotor.getSupplyCurrent());
-            moduleMap.put("driveStatorCurrentAmperes", driveMotor.getStatorCurrent());
-            moduleMap.put("driveAppliedVoltage", driveMotor.getMotorVoltage());
-            moduleMap.put("driveTemperatureCelsius", driveMotor.getDeviceTemp());
-
-            moduleMap.put("steerSupplyCurrentAmperes", steerMotor.getSupplyCurrent());
-            moduleMap.put("steerStatorCurrentAmperes", steerMotor.getStatorCurrent());
-            moduleMap.put("steerAppliedVoltage", steerMotor.getMotorVoltage());
-            moduleMap.put("steerTemperatureCelsius", steerMotor.getDeviceTemp());
-        }
 
         angularPitchVelocity = getPigeon2().getAngularVelocityYWorld();
         angularRollVelocity = getPigeon2().getAngularVelocityXWorld();
@@ -121,9 +96,19 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     }
 
      @Override
-    public void updateDrivetrainInputs(DrivetrainIOInputs inputs) {
+    public void updateInputs(DrivetrainIOInputs inputs) {
         if (telemetryCache.get() == null) return;
         inputs.logState(telemetryCache.get());
+
+        BaseStatusSignal.refreshAll(
+            angularYawVelocity,
+            angularPitchVelocity,
+            angularRollVelocity,
+            roll,
+            pitch,
+            accelerationX,
+            accelerationY
+        );
 
         var gyroRotation = inputs.Pose.getRotation();
         inputs.gyroAngle = gyroRotation.getDegrees();
@@ -168,20 +153,30 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     }
 
     @Override
-    public void updateModuleInputs(ModuleIOInputs... inputs) {
-        for (int i = 0; i < 4; i++) {
-            var moduleMap = signalsMap.get(i);
+    public void logModules(SwerveDriveState swerveState) {
+        final String[] moduleNames = { "Drivetrain/FL", "Drivetrain/FR", "Drivetrain/BL", "Drivetrain/BR" };
 
-            inputs[i].driveSupplyCurrentAmperes = moduleMap.get("driveSupplyCurrentAmperes").getValueAsDouble();
-            inputs[i].driveStatorCurrentAmperes = moduleMap.get("driveStatorCurrentAmperes").getValueAsDouble();
-            inputs[i].driveAppliedVoltage = moduleMap.get("driveAppliedVoltage").getValueAsDouble();
-            inputs[i].driveTemperatureCelsius = moduleMap.get("driveTemperatureCelsius").getValueAsDouble();
-
-            inputs[i].steerSupplyCurrentAmperes = moduleMap.get("steerSupplyCurrentAmperes").getValueAsDouble();
-            inputs[i].steerStatorCurrentAmperes = moduleMap.get("steerStatorCurrentAmperes").getValueAsDouble();
-            inputs[i].steerAppliedVoltage = moduleMap.get("steerAppliedVoltage").getValueAsDouble();
-            inputs[i].steerTemperatureCelsius = moduleMap.get("steerTemperatureCelsius").getValueAsDouble();
+        for(int i = 0; i < getModules().length; i++) {
+            Logger.recordOutput(moduleNames[i] + "Absolute Encoder Angle", getModule(i).getEncoder().getAbsolutePosition().getValue().in(Radians));
+            Logger.recordOutput(moduleNames[i] + "Steer Motor Angle", swerveState.ModuleStates[i].angle);
+            Logger.recordOutput(moduleNames[i] + "Target Steer Motor Angle", swerveState.ModuleTargets[i].angle);
+            Logger.recordOutput(moduleNames[i] + "Drive Motor Velocity", swerveState.ModuleStates[i].speedMetersPerSecond);
+            Logger.recordOutput(moduleNames[i] + "Target Drive Motor Velocity", swerveState.ModuleTargets[i].speedMetersPerSecond);
         }
+
+        // for (int i = 0; i < 4; i++) {
+        //     var moduleMap = signalsMap.get(i);
+
+        //     inputs[i].driveSupplyCurrentAmperes = moduleMap.get("driveSupplyCurrentAmperes").getValueAsDouble();
+        //     inputs[i].driveStatorCurrentAmperes = moduleMap.get("driveStatorCurrentAmperes").getValueAsDouble();
+        //     inputs[i].driveAppliedVoltage = moduleMap.get("driveAppliedVoltage").getValueAsDouble();
+        //     inputs[i].driveTemperatureCelsius = moduleMap.get("driveTemperatureCelsius").getValueAsDouble();
+
+        //     inputs[i].steerSupplyCurrentAmperes = moduleMap.get("steerSupplyCurrentAmperes").getValueAsDouble();
+        //     inputs[i].steerStatorCurrentAmperes = moduleMap.get("steerStatorCurrentAmperes").getValueAsDouble();
+        //     inputs[i].steerAppliedVoltage = moduleMap.get("steerAppliedVoltage").getValueAsDouble();
+        //     inputs[i].steerTemperatureCelsius = moduleMap.get("steerTemperatureCelsius").getValueAsDouble();
+        // }
     }
 
     @Override
@@ -223,13 +218,5 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     @Override
     public void resetOdometry(Pose2d pose) {
         this.resetPose(pose);
-    }
-
-    @Override
-    public void refreshData() {
-        for (int i = 0; i < 4; i++) {
-            var moduleMap = signalsMap.get(i);
-            BaseStatusSignal.refreshAll(moduleMap.values().toArray(new BaseStatusSignal[] {}));
-        }
     }
 }

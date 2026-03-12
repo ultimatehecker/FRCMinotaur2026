@@ -39,7 +39,6 @@ import frc.minolib.phoenix.MechanismRatio;
 import frc.minolib.phoenix.MinoStatusSignal;
 import frc.minolib.phoenix.PIDConfiguration;
 import frc.minolib.phoenix.PhoenixUtility;
-import frc.minolib.io.MotorInputsAutoLogged;
 
 import java.util.function.Function;
 
@@ -231,14 +230,14 @@ public class MinoTalonFX implements AutoCloseable {
         return new MinoTalonFXConfiguration();
     }
 
-    public MinoTalonFX(final CANDeviceID canID, final MinoTalonFX leader, final MinoTalonFXConfiguration configuration) {
-        this(canID, leader.getMechanismRatio(), configuration);
+    public MinoTalonFX(final MinoCANDevice device, final MinoTalonFX leader, final MinoTalonFXConfiguration configuration) {
+        this(device, leader.getMechanismRatio(), configuration);
         controller.setControl(new StrictFollower(leader.getDeviceID()));
     }
 
-    public MinoTalonFX(final CANDeviceID canID, final MechanismRatio gearRatio, final MinoTalonFXConfiguration configuration) {
-        name = "TalonFX " + canID.toString();
-        controller = new TalonFX(canID.deviceNumber, canID.CANbusName);
+    public MinoTalonFX(final MinoCANDevice device, final MechanismRatio gearRatio, final MinoTalonFXConfiguration configuration) {
+        name = "TalonFX " + device.deviceNumber;
+        controller = new TalonFX(device.deviceNumber, device.CANBus.getParent());
         simulationState = controller.getSimState();
         this.gearRatio = gearRatio;
         this.configuration = configuration;

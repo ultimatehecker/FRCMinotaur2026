@@ -12,14 +12,14 @@ public class ControllerMappings {
         Map<String, Integer> xboxButtons = new HashMap<>();
         xboxButtons.put("A", 1);
         xboxButtons.put("B", 2);
-        xboxButtons.put("X", 4);
-        xboxButtons.put("Y", 5);
-        xboxButtons.put("LeftBumper", 7);
-        xboxButtons.put("RightBumper", 8);
-        xboxButtons.put("Back", 11);
-        xboxButtons.put("Start", 12);
-        xboxButtons.put("LeftStick", 14);
-        xboxButtons.put("RightStick", 15);
+        xboxButtons.put("X", 3);
+        xboxButtons.put("Y", 4);
+        xboxButtons.put("LeftBumper", 5);
+        xboxButtons.put("RightBumper", 6);
+        xboxButtons.put("Back", 7);
+        xboxButtons.put("Start", 8);
+        xboxButtons.put("LeftStick", 9);
+        xboxButtons.put("RightStick", 10);
 
         Map<String, Integer> xboxAxes = new HashMap<>();
         xboxAxes.put("LeftX", 0);

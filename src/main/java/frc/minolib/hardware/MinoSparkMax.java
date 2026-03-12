@@ -20,13 +20,17 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import frc.minolib.phoenix.MechanismRatio;
 import frc.minolib.rev.ClosedLoopConfiguration;
-import frc.minolib.io.MotorInputsAutoLogged;
 
 import java.util.function.Function;
 
 import org.littletonrobotics.junction.Logger;
 
 public class MinoSparkMax implements  AutoCloseable {
+    @Override
+    public void close() {
+        
+    }
+    /* 
     private static final double kCANTimeoutS = 0.1; // s
     private final String name;
     private final String loggingName;
@@ -160,13 +164,11 @@ public class MinoSparkMax implements  AutoCloseable {
         return new MinoSparkMaxConfiguration();
     }
 
-    /** Follower constructor */
     public MinoSparkMax(final CANDeviceID canID, final MinoSparkMax leader, final MinoSparkMaxConfiguration configuration) {
         this(canID, leader.getMechanismRatio(), configuration);
         //controller.setControl(new StrictFollower(leader.getDeviceID()));
     }
 
-    /** Constructor with full configuration */
     public MinoSparkMax(final CANDeviceID canID, final MechanismRatio gearRatio, final MinoSparkMaxConfiguration configuration) {
         name = "SparkMax " + canID.toString();
         loggingName = "Inputs/" + name;
@@ -372,4 +374,6 @@ public class MinoSparkMax implements  AutoCloseable {
         simulationState.setVelocity(sign * rotationsPerSecond);
         simulationState.setPosition(sign * rotationsPerSecond * dt);
     }
+
+    */
 }

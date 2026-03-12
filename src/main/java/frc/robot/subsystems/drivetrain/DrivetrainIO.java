@@ -15,7 +15,7 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.minolib.utilities.SubsystemDataProcessor;
 
-public interface DrivetrainIO extends SubsystemDataProcessor.IODataRefresher {
+public interface DrivetrainIO {
     @AutoLog
     public class DrivetrainIOInputs extends SwerveDriveState {
         public double gyroAngle = 0.0;
@@ -49,9 +49,9 @@ public interface DrivetrainIO extends SubsystemDataProcessor.IODataRefresher {
         public double steerTemperatureCelsius = 0.0;
     }
 
-    public void updateDrivetrainInputs(DrivetrainIOInputs inputs);
+    public void updateInputs(DrivetrainIOInputs inputs);
 
-    public void updateModuleInputs(ModuleIOInputs... inputs);
+    public void logModules(SwerveDriveState swerveState);
 
     public void setControl(SwerveRequest request);
 
@@ -66,7 +66,4 @@ public interface DrivetrainIO extends SubsystemDataProcessor.IODataRefresher {
     public void addVisionMeasurement(WeightedPoseEstimate visionFieldPoseEstimate); // do later because i dont feel like it
 
     public void resetOdometry(Pose2d pose);
-
-    @Override
-    public void refreshData(); 
 }

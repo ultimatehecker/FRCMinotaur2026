@@ -49,8 +49,8 @@ public class DrivetrainIOSimulation extends DrivetrainIOHardware {
     }
 
     @Override
-    public void updateDrivetrainInputs(DrivetrainIOInputs inputs) {
-        super.updateDrivetrainInputs(inputs);
+    public void updateInputs(DrivetrainIOInputs inputs) {
+        super.updateInputs(inputs);
 
         var pose = getSimulatedPose();
         if (pose != null) {

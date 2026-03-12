@@ -14,17 +14,22 @@ import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.minolib.controller.CommandSimulatedXboxController;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.robot.command_factories.DrivetrainFactory;
+import frc.robot.command_factories.IntakeFactory;
 import frc.robot.constants.ControllerConstants;
 import frc.robot.constants.DrivetrainConstants;
+import frc.robot.constants.IntakeConstants;
 import frc.robot.subsystems.drivetrain.CompetitionTunerConstants;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainIOHardware;
 import frc.robot.subsystems.drivetrain.DrivetrainIOSimulation;
 import frc.robot.subsystems.drivetrain.SimulationTunerConstants;
+import frc.robot.subsystems.intake.Intake;
+import frc.robot.subsystems.intake.IntakeIOHardware;
+import frc.robot.subsystems.intake.IntakeIOSimulation;
 
 public class RobotContainer {
   private final Consumer<WeightedPoseEstimate> visionEstimateConsumer = new Consumer<WeightedPoseEstimate>() {
@@ -36,9 +41,10 @@ public class RobotContainer {
 
   private final RobotState robotState = new RobotState(visionEstimateConsumer);
   private Drivetrain drivetrain;
+  private Intake intake;
 
-  private CommandSimulatedXboxController driverController = new CommandSimulatedXboxController(ControllerConstants.kDriverControllerPort);
-  private CommandSimulatedXboxController operatorController = new CommandSimulatedXboxController(ControllerConstants.kOperatorControllerPort);
+  private CommandXboxController driverController = new CommandXboxController(ControllerConstants.kDriverControllerPort);
+  private CommandXboxController operatorController = new CommandXboxController(ControllerConstants.kOperatorControllerPort);
 
   private final LoggedDashboardChooser<Command> autoRegistry;
 
@@ -56,12 +62,31 @@ public class RobotContainer {
     }
   }
 
+  private Intake buildIntake() {
+    if(Robot.isSimulation()) {
+      return new Intake(
+        new IntakeIOSimulation()
+        //robotState
+      );
+    } else {
+      return new Intake(
+        new IntakeIOHardware(IntakeConstants.kRollerMotor, IntakeConstants.kPivotMotor, IntakeConstants.kPivotAbsoluteEncoder)
+        //robotState
+      );
+    }
+  }
+
   public Drivetrain getDrivetrain() {
     return drivetrain;
   }
 
+  public Intake getIntake() {
+    return intake;
+  }
+
   public RobotContainer() {
     drivetrain = buildDrivetrain();
+    intake = buildIntake();
 
     autoRegistry = new LoggedDashboardChooser<Command>("Auton Choices", AutoBuilder.buildAutoChooser());
     configureBindings();
@@ -76,6 +101,13 @@ public class RobotContainer {
       driverController::getRightX, 
       true
     ));
+
+    driverController.a().onTrue(IntakeFactory.deployGroundIntakeNonBlocking(this));
+    driverController.b().onTrue(IntakeFactory.parkGroundIntakeNonBlocking(this));
+
+    driverController.x().onTrue(IntakeFactory.runRollersIntakingNonBlocking(this));
+    driverController.y().onTrue(IntakeFactory.runRollersExhaustingNonBlocking(this));
+    driverController.y().and(driverController.x()).whileFalse(IntakeFactory.stopRollers(this));
   }
 
   public Command getAutonomousCommand() {

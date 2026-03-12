@@ -7,21 +7,16 @@ import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.swerve.SwerveModule;
-import com.ctre.phoenix6.mechanisms.swerve.LegacySwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveRequest.ApplyRobotSpeeds;
 
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.commands.PathPlannerAuto;
-import com.pathplanner.lib.config.ModuleConfig;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Force;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -38,11 +33,7 @@ public class Drivetrain extends SubsystemBase {
     private DrivetrainIO io;
     private RobotState robotState;
 
-    private DrivetrainIOInputsAutoLogged inputs = new DrivetrainIOInputsAutoLogged(); // TODO: Log modules in io to make this cleaner maybe?
-    private ModuleIOInputsAutoLogged frontLeftInputs = new ModuleIOInputsAutoLogged();
-    private ModuleIOInputsAutoLogged frontRightInputs = new ModuleIOInputsAutoLogged();
-    private ModuleIOInputsAutoLogged backLeftInputs = new ModuleIOInputsAutoLogged();
-    private ModuleIOInputsAutoLogged backRightInputs = new ModuleIOInputsAutoLogged();
+    private DrivetrainIOInputsAutoLogged inputs = new DrivetrainIOInputsAutoLogged();
 
     private final Object moduleIOLock = new Object();
     private RobotConfig robotConfig;
@@ -56,28 +47,15 @@ public class Drivetrain extends SubsystemBase {
         this.io = io;
         this.robotState = robotState;
 
-        SubsystemDataProcessor.createAndStartSubsystemDataProcessor(() -> {
-            synchronized (moduleIOLock) {
-                io.updateModuleInputs(frontLeftInputs, frontRightInputs, backLeftInputs, backRightInputs);
-            }
-        }, io);
-
-        io.setBrakeMode(true);
         configurePathPlanner();
     }
 
     @Override
     public void periodic() {
         double timestamp = RobotTime.getTimestampSeconds();
-        io.updateDrivetrainInputs(inputs);
+        io.updateInputs(inputs);
 
-        synchronized (moduleIOLock) {
-            Logger.processInputs("Drivetrain", inputs);
-            Logger.processInputs("Drivetrain/Front Left", frontLeftInputs);
-            Logger.processInputs("Drivetrain/Front Right", frontRightInputs);
-            Logger.processInputs("Drivetrain/Back Left", backLeftInputs);
-            Logger.processInputs("Drivetrain/Back Right", backRightInputs);
-        }
+        Logger.processInputs("Drivetrain", inputs);
 
         if (DriverStation.isDisabled()) {
             configureStandardDevsForDisabled();
@@ -90,14 +68,11 @@ public class Drivetrain extends SubsystemBase {
     }
 
     private void configurePathPlanner() {
-
-        try{
+        try {
             robotConfig = RobotConfig.fromGUISettings();
         } catch (Exception e) {
-            // Handle exception as needed
             e.printStackTrace();
         }
-
 
         AutoBuilder.configure(
             () -> robotState.getLatestFieldToRobot().getValue(),
@@ -105,8 +80,8 @@ public class Drivetrain extends SubsystemBase {
             robotState::getLatestDesiredRobotRelativeChassisSpeeds,
             (speeds, feedforwards) -> applyPathPlannerRequest(speeds, feedforwards.robotRelativeForcesX(), feedforwards.robotRelativeForcesY()),
             new PPHolonomicDriveController(
-                new PIDConstants(5.0, 0, 0), 
-                new PIDConstants(5.0, 0, 0)
+                new PIDConstants(DrivetrainConstants.kPathPlannerDriveHolonomicControllerP, DrivetrainConstants.kPathPlannerDriveHolonomicControllerI, DrivetrainConstants.kPathPlannerDriveHolonomicControllerD), 
+                new PIDConstants(DrivetrainConstants.kPathPlannerSteerHolonomicControllerP, DrivetrainConstants.kPathPlannerSteerHolonomicControllerI, DrivetrainConstants.kPathPlannerSteerHolonomicControllerD)
             ),
             robotConfig,
             robotState::isRedAlliance,
