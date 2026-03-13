@@ -21,7 +21,7 @@ import edu.wpi.first.units.measure.Force;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
+import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.minolib.swerve.pathplanner.PathPlannerLogging;
 import frc.minolib.utilities.SubsystemDataProcessor;
@@ -65,6 +65,8 @@ public class Drivetrain extends SubsystemBase {
 
         Logger.recordOutput("Drivetrain/LatencyPeriodicSeconds", RobotTime.getTimestampSeconds() - timestamp);
         Logger.recordOutput("Drivetrain/CurrentCommand", (getCurrentCommand() == null) ? "Default" : getCurrentCommand().getName());
+
+        LoggedTracer.record("DrivetrainPeriodicMS");
     }
 
     private void configurePathPlanner() {
