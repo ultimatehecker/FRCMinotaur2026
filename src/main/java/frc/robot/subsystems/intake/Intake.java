@@ -1,9 +1,11 @@
 package frc.robot.subsystems.intake;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.AutoLogOutput;
@@ -48,8 +50,8 @@ public class Intake extends SubsystemBase {
 
     @RequiredArgsConstructor
     public enum PivotGoal {
-        DEPLOY(new LoggedTunableNumber("Intake/Pivot/DeployedDegrees", 180.0)),
-        PARKED(new LoggedTunableNumber("Intake/Pivot/ParkedDegrees", 20.0)),
+        DEPLOY(new LoggedTunableNumber("Intake/Pivot/DeployedDegrees", IntakeConstants.kIntakeMaximumPosition.in(Degrees))),
+        PARKED(new LoggedTunableNumber("Intake/Pivot/ParkedDegrees", IntakeConstants.kIntakeMinimumPosition.in(Degrees))),
         FEED(new LoggedTunableNumber("Intake/Pivot/FeedDegrees", 90.0)),
         CLIMB(new LoggedTunableNumber("Intake/Pivot/ClimbDegrees", 70.0));
 
@@ -103,7 +105,8 @@ public class Intake extends SubsystemBase {
     private final Alert rollerMotorDisconnectedAlert = new Alert("Intake roller motor disconnected!", AlertType.kError);
 
     @AutoLogOutput(key = "Intake/BrakeModeEnabled")
-    private boolean brakeModeEnabled = true;
+    private BooleanSupplier brakeModeEnabled = () -> false;
+    private boolean lastBrakeModeEnabled = true;
 
     private TrapezoidProfile profile;
     @Getter private State setpoint = new State();
@@ -118,7 +121,7 @@ public class Intake extends SubsystemBase {
     private boolean pivotHomed = false;
 
     @Getter 
-    private RollerGoal rollerGoal = RollerGoal.IDLE;
+    private RollerGoal rollerGoal = RollerGoal.STOP;
     private double rollerVoltage = 0.0;
 
     private Debouncer pivotHomingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
@@ -149,7 +152,7 @@ public class Intake extends SubsystemBase {
             }
         },
         io);
-
+        
         pivotHomingCommand = backupHomingSequence();
     }
 
@@ -185,7 +188,7 @@ public class Intake extends SubsystemBase {
 
         // Run profile
         final boolean shouldRunProfile = !stopProfile
-            && brakeModeEnabled
+            && brakeModeEnabled.getAsBoolean()
             && (pivotHomed || GlobalConstants.getRobot() == GlobalConstants.RobotType.SIMBOT)
             && DriverStation.isEnabled();
 
@@ -225,9 +228,7 @@ public class Intake extends SubsystemBase {
         }
 
         switch (rollerGoal) {
-            case INTAKE -> rollerVoltage = rollerGoal.getRollerVoltage();
-            case EXHAUST -> rollerVoltage = rollerGoal.getRollerVoltage();
-            case IDLE -> rollerVoltage = rollerGoal.getRollerVoltage();
+            case INTAKE, EXHAUST, IDLE -> rollerVoltage = rollerGoal.getRollerVoltage();
             case STOP -> rollerVoltage = 0.0;
         }
         
@@ -235,6 +236,7 @@ public class Intake extends SubsystemBase {
 
         Logger.recordOutput("Intake/Pivot/MeasuredVelocityRadiansPerSecond", inputs.pivotVelocity);
         Logger.recordOutput("Intake/Roller/AppliedVoltage", rollerVoltage);
+        Logger.recordOutput("Intake/Roller/WantedVoltage", rollerGoal.getRollerVoltage());
 
         LoggedTracer.record("IntakePeriodicMS");
     }
@@ -250,10 +252,10 @@ public class Intake extends SubsystemBase {
         this.rollerGoal = goal;
     }
 
-    public void setBrakeMode(boolean enabled) {
-        if (brakeModeEnabled == enabled) return;
-        brakeModeEnabled = enabled;
-        io.setBrakeMode(brakeModeEnabled);
+    public void setBrakeMode(BooleanSupplier enabled) {
+        if (this.brakeModeEnabled.getAsBoolean() == enabled.getAsBoolean()) return;
+        this.brakeModeEnabled = enabled;
+        io.setBrakeMode(brakeModeEnabled.getAsBoolean());
     }
 
     public void setHome() {
@@ -272,7 +274,7 @@ public class Intake extends SubsystemBase {
             pivotHomingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
             pivotHomingDebouncer.calculate(false);
         }, () -> {
-            if (!brakeModeEnabled) return;
+            if (!brakeModeEnabled.getAsBoolean()) return;
 
             io.setPivotVoltage(kHomingVolts.get());
             pivotHomed = pivotHomingDebouncer.calculate(Math.abs(inputs.pivotVelocity) <= kHomingVelocityThreshold.get() && Math.abs(inputs.pivotAppliedVoltage) >= kHomingVolts.get() * 0.7);
