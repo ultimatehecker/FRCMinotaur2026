@@ -136,10 +136,3 @@ wpi.java.configureTestTasks(test)
 tasks.withType(JavaCompile) {
     options.compilerArgs.add '-XDstringConcat=inline'
 }
-
-task(checkConstantsDeploy, dependsOn: "classes", type: JavaExec) {
-    main = "org.littletonrobotics.frc2025.Constants\$CheckDeploy"
-    classpath = sourceSets.main.runtimeClasspath
-}
-
-deployroborio.dependsOn(checkConstantsDeploy)
