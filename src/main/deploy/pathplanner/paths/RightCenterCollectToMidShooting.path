@@ -25,7 +25,7 @@
       },
       "nextControl": {
         "x": 4.665046460019918,
-        "y": 0.5950676003573886
+        "y": 0.5950676003573885
       },
       "isLocked": false,
       "linkedName": "RCP1a"
@@ -68,7 +68,7 @@
         "x": 4.625,
         "y": 4.0
       },
-      "rotationOffset": 0.0,
+      "rotationOffset": 180.0,
       "minWaypointRelativePos": 2.2346289752650157,
       "maxWaypointRelativePos": 3.0,
       "name": "Point Towards Zone"
@@ -85,7 +85,7 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 30.100000000000005
+    "rotation": -148.2
   },
   "reversed": false,
   "folder": "Right",

@@ -1,0 +1,31 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CenterStartingToOutpostCollection"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CenterOutpostCollectionToMidShooting"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CenterMidShootingToHang"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

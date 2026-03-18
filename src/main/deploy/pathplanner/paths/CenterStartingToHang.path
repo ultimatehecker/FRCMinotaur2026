@@ -3,16 +3,16 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 0.5889900662251655,
-        "y": 7.105951986754967
+        "x": 3.568232502965599,
+        "y": 3.97
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.3241142384105955,
-        "y": 6.648576158940398
+        "x": 2.568232502965599,
+        "y": 3.97
       },
       "isLocked": false,
-      "linkedName": "LeftDepotCollectionPose"
+      "linkedName": "CenterHubStartingPose"
     },
     {
       "anchor": {
@@ -20,8 +20,8 @@
         "y": 3.701043046357616
       },
       "prevControl": {
-        "x": 2.164155629139073,
-        "y": 3.7311258278145694
+        "x": 2.5763410596026484,
+        "y": 3.701043046357616
       },
       "nextControl": null,
       "isLocked": false,
@@ -45,10 +45,10 @@
     "rotation": 180.0
   },
   "reversed": false,
-  "folder": "Left",
+  "folder": "Center",
   "idealStartingState": {
     "velocity": 0,
-    "rotation": 142.0
+    "rotation": 180.0
   },
   "useDefaultConstraints": true
 }

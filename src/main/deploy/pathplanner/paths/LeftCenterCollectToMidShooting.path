@@ -24,7 +24,7 @@
         "y": 7.45442880794702
       },
       "nextControl": {
-        "x": 4.753029801324505,
+        "x": 4.753029801324503,
         "y": 7.45442880794702
       },
       "isLocked": false,
@@ -36,8 +36,8 @@
         "y": 7.338269867549669
       },
       "prevControl": {
-        "x": 3.4174670025658154,
-        "y": 7.520319865722869
+        "x": 3.4174670025658163,
+        "y": 7.52031986572287
       },
       "nextControl": {
         "x": 3.0138079470198678,
@@ -57,7 +57,7 @@
       },
       "nextControl": null,
       "isLocked": false,
-      "linkedName": null
+      "linkedName": "LeftMidShootingPose"
     }
   ],
   "rotationTargets": [

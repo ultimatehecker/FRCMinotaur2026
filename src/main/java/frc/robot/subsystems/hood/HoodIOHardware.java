@@ -4,6 +4,7 @@ import static frc.minolib.rev.REVUtility.tryUntilOk;
 import static frc.minolib.rev.REVUtility.ifOkOrDefault;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Radians;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -69,6 +70,7 @@ public class HoodIOHardware implements HoodIO {
             .d(0);
 
         tryUntilOk(hoodMotor, 5, () -> hoodMotor.configure(hoodMotorConfiguration, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
+        tryUntilOk(hoodMotor, 5, () -> hoodEncoder.setPosition(HoodConstants.kHoodMinimumPosition.in(Radians)));
     }
 
     @Override
@@ -80,6 +82,7 @@ public class HoodIOHardware implements HoodIO {
         ifOkOrDefault(hoodMotor, new DoubleSupplier[] { hoodMotor::getBusVoltage, hoodMotor::getAppliedOutput }, x -> x[0] * x[1], inputs.appliedVoltage);
         ifOkOrDefault(hoodMotor, hoodMotor::getOutputCurrent, inputs.supplyCurrentAmperes);
         ifOkOrDefault(hoodMotor, hoodMotor::getMotorTemperature, inputs.tempuratureCelcius);
+
         inputs.isMotorConnected = !REVUtility.sparkStickyFault;
     }
 

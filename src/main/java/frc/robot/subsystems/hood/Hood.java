@@ -45,7 +45,7 @@ public class Hood extends SubsystemBase {
     private static final LoggedTunableNumber kV = new LoggedTunableNumber("Hood/kV");
     private static final LoggedTunableNumber kA = new LoggedTunableNumber("Hood/kA");
 
-    private static final LoggedTunableNumber kPivotMaximumAngle = new LoggedTunableNumber("Hood/MaximumAngle", HoodConstants.kHoodMaximumPosition.in(Radians));
+    private static final LoggedTunableNumber kMaximumAngle = new LoggedTunableNumber("Hood/MaximumAngle", HoodConstants.kHoodMaximumPosition.in(Radians));
     private static final LoggedTunableNumber kMaximumVelocityRadiansPerSecond = new LoggedTunableNumber("Hood/MaxVelocityRadiansPerSecond", HoodConstants.kHoodMaximumRotationalVelocity.in(RadiansPerSecond));
     private static final LoggedTunableNumber kMaximumAccelerationRadiansPerSecond2 = new LoggedTunableNumber("Hood/MaxAccelerationRadiansPerSecond2", HoodConstants.kHoodMaximumRotationalAcceleration.in(RadiansPerSecondPerSecond));
     private static final LoggedTunableNumber kHomingVolts = new LoggedTunableNumber("Hood/HomingVoltage", -3.0);
@@ -90,8 +90,8 @@ public class Hood extends SubsystemBase {
     private final HoodIO io;
     private final HoodIOInputsAutoLogged inputs = new HoodIOInputsAutoLogged();
 
-    private final Debouncer hoodMotorConnectedDebouncer = new Debouncer(0.5, Debouncer.DebounceType.kFalling);
-    private final Alert hoodMotorDisconnectedAlert = new Alert("The Hood motor is disconnected!", AlertType.kError);
+    private final Debouncer motorConnectedDebouncer = new Debouncer(0.5, Debouncer.DebounceType.kFalling);
+    private final Alert motorDisconnectedAlert = new Alert("The hood motor is disconnected!", AlertType.kError);
 
     @AutoLogOutput(key = "Hood/BrakeModeEnabled")
     private BooleanSupplier brakeModeEnabled = () -> true;
@@ -102,23 +102,23 @@ public class Hood extends SubsystemBase {
     private boolean stopProfile = false;
 
     @AutoLogOutput(key = "Hood/HomedPositionRadians")
-    private double hoodHomedPosition = 0.0;
+    private double homedPosition = 0.0;
 
     @AutoLogOutput(key = "Hood/Homed")
     @Getter
-    private boolean hoodHomed = true;
+    private boolean isHomed = true;
 
-    private Debouncer hoodHomingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
-    private final Command hoodHomingCommand;
+    private Debouncer homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
+    private final Command homingCommand;
 
     @Getter
     @Accessors(fluent = true)
     @AutoLogOutput(key = "Hood/Profile/AtGoal")
-    private boolean hoodAtGoal = false;
+    private boolean atGoal = false;
 
     @Getter
     @Accessors(fluent = true)
-    private boolean hoodWantsToDeploy = false;
+    private boolean wantsToDeploy = false;
 
     public Hood(HoodIO io) {
         this.io = io;
@@ -130,7 +130,7 @@ public class Hood extends SubsystemBase {
         },
         io);
 
-        hoodHomingCommand = homingSequence();
+        homingCommand = homingSequence();
     }
 
     @Override
@@ -139,7 +139,7 @@ public class Hood extends SubsystemBase {
             Logger.processInputs("Hood", inputs);
         }
     
-        hoodMotorDisconnectedAlert.set(!hoodMotorConnectedDebouncer.calculate(inputs.isMotorConnected) && !Robot.isJITing());
+        motorDisconnectedAlert.set(!motorConnectedDebouncer.calculate(inputs.isMotorConnected) && !Robot.isJITing());
 
         // Update tunable numbers
         if (kP.hasChanged(hashCode()) || kD.hasChanged(hashCode())) {
@@ -155,48 +155,45 @@ public class Hood extends SubsystemBase {
             );
         }
 
-        hoodWantsToDeploy = !hoodHomed || (getMeasuredAngleRadians() < kPivotMaximumAngle.get() / 2.0);
+        wantsToDeploy = !isHomed || (getMeasuredAngleRadians() < kMaximumAngle.get() / 2.0);
 
         // Home on enable
-        if (DriverStation.isEnabled() && !hoodHomed && !hoodHomingCommand.isScheduled()) {
-            CommandScheduler.getInstance().schedule(hoodHomingCommand);
+        if (DriverStation.isEnabled() && !isHomed && !homingCommand.isScheduled()) {
+            CommandScheduler.getInstance().schedule(homingCommand);
         }
 
         // Run profile
         final boolean shouldRunProfile = !stopProfile
             && brakeModeEnabled.getAsBoolean()
-            && (hoodHomed || GlobalConstants.getRobot() == GlobalConstants.RobotType.SIMBOT)
+            && (isHomed || GlobalConstants.getRobot() == GlobalConstants.RobotType.SIMBOT)
             && DriverStation.isEnabled();
 
         Logger.recordOutput("Hood/RunningProfile", shouldRunProfile);
 
         if (shouldRunProfile) {
-            var goalState = new State(MathUtil.clamp(goal.getAngleRadians(), 0.0, kPivotMaximumAngle.get()), 0.0);
+            var goalState = new State(MathUtil.clamp(goal.getAngleRadians(), 0.0, kMaximumAngle.get()), 0.0);
             double previousVelocity = setpoint.velocity;
             setpoint = profile.calculate(GlobalConstants.kLoopPeriodSeconds, setpoint, goalState);
 
-            if (setpoint.position < 0.0 || setpoint.position > kPivotMaximumAngle.get()) {
-                setpoint = new State(MathUtil.clamp(setpoint.position, 0.0, kPivotMaximumAngle.get()), 0.0);
+            if (setpoint.position < 0.0 || setpoint.position > kMaximumAngle.get()) {
+                setpoint = new State(MathUtil.clamp(setpoint.position, 0.0, kMaximumAngle.get()), 0.0);
             }
 
-            hoodAtGoal = EqualsUtility.epsilonEquals(setpoint.position, goalState.position) && EqualsUtility.epsilonEquals(setpoint.velocity, goalState.velocity);
+            atGoal = EqualsUtility.epsilonEquals(setpoint.position, goalState.position) && EqualsUtility.epsilonEquals(setpoint.velocity, goalState.velocity);
 
             double accel = (setpoint.velocity - previousVelocity) / GlobalConstants.kLoopPeriodSeconds;
             io.setPosition(
-                setpoint.position + hoodHomedPosition,
+                setpoint.position + homedPosition,
                 kS.get() * Math.signum(setpoint.velocity) + kG.get() * Math.cos(setpoint.position) + kA.get() * accel
             );
 
-            // Log state
             Logger.recordOutput("Hood/Profile/SetpointPositionRadians", setpoint.position);
             Logger.recordOutput("Hood/Profile/SetpointVelocityRadiansPerSecond", setpoint.velocity);
             Logger.recordOutput("Hood/Profile/GoalPositionRadians", goalState.position);
             Logger.recordOutput("Hood/Profile/GoalVelocityRadiansPerSecond", goalState.velocity);
         } else {
-            // Reset setpoint
             setpoint = new State(getMeasuredAngleRadians(), 0.0);
 
-            // Clear logs
             Logger.recordOutput("Hood/Profile/SetpointPositionMeters", 0.0);
             Logger.recordOutput("Hood/Profile/SetpointVelocityRadiansPerSecond", 0.0);
             Logger.recordOutput("Hood/Profile/GoalPositionRadians", 0.0);
@@ -223,36 +220,32 @@ public class Hood extends SubsystemBase {
     }
 
     public void setHome() {
-        hoodHomedPosition = inputs.position;
-        hoodHomed = true;
-    }
-
-    private Command setGoalCommand(HoodGoal goal) {
-        return Commands.runOnce(() -> setGoal(goal));
+        homedPosition = inputs.position;
+        isHomed = true;
     }
 
     private Command homingSequence() {
         return Commands.startRun(() -> {
             stopProfile = true;
-            hoodHomed = false;
-            hoodHomingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
-            hoodHomingDebouncer.calculate(false);
+            isHomed = false;
+            homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
+            homingDebouncer.calculate(false);
         }, () -> {
             if (!brakeModeEnabled.getAsBoolean()) return;
 
             io.setVoltage(kHomingVolts.get());
-            hoodHomed = hoodHomingDebouncer.calculate(Math.abs(inputs.velocity) <= kHomingVelocityThreshold.get() && Math.abs(inputs.appliedVoltage) >= kHomingVolts.get() * 0.7);
-        }).until(() -> hoodHomed).andThen(this::setHome).finallyDo(() -> {
+            isHomed = homingDebouncer.calculate(Math.abs(inputs.velocity) <= kHomingVelocityThreshold.get() && Math.abs(inputs.appliedVoltage) >= kHomingVolts.get() * 0.7);
+        }).until(() -> isHomed).andThen(this::setHome).finallyDo(() -> {
             stopProfile = false;
         }).withName("Hood Homing Sequence");
     }
 
     public void overrideHoming() {
-        hoodHomed = false;
+        isHomed = false;
     }
 
-    @AutoLogOutput(key = "Hood/MeasuredAngleRads")
+    @AutoLogOutput(key = "Hood/MeasuredAngleRadians")
     public double getMeasuredAngleRadians() {
-        return inputs.position - hoodHomedPosition;
+        return inputs.position - homedPosition;
     }
 }

@@ -68,7 +68,7 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
     };
 
     public DrivetrainIOHardware(RobotState robotState, SwerveDrivetrainConstants constants, SwerveModuleConstants<?, ?, ?>... moduleConstants) {
-        super(TalonFX::new, TalonFX::new, CANcoder::new, constants, 250.0, moduleConstants);
+        super(TalonFX::new, TalonFX::new, CANcoder::new, constants, 50.0, moduleConstants);
         this.resetRotation(Rotation2d.kZero);
         this.robotState = robotState;
 
@@ -80,9 +80,9 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
         accelerationX = getPigeon2().getAccelerationX();
         accelerationY = getPigeon2().getAccelerationY();
 
-        BaseStatusSignal.setUpdateFrequencyForAll(250, angularYawVelocity);
+        BaseStatusSignal.setUpdateFrequencyForAll(50, angularYawVelocity);
         BaseStatusSignal.setUpdateFrequencyForAll(
-            100,
+            50,
             angularPitchVelocity,
             angularRollVelocity,
             roll,
@@ -179,10 +179,17 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
         // }
     }
 
+
     @Override
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier, Subsystem subsystemRequired) {
         return Commands.run(() -> super.setControl(requestSupplier.get()), subsystemRequired);
     }
+
+    @Override
+    public void seedFieldCentric() {
+        super.seedFieldCentric();
+    }
+
 
     @Override
     public void setControl(SwerveRequest request) {

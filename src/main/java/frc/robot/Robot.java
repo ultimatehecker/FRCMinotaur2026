@@ -36,6 +36,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Watchdog;
+import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -109,6 +110,7 @@ public class Robot extends LoggedRobot {
         break;
     }
 
+    LiveWindow.disableAllTelemetry();
     SignalLogger.enableAutoLogging(false); // might disable later
     Logger.start();
 

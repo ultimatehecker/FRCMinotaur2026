@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.function.DoubleSupplier;
 
+import org.dyn4j.geometry.Rotation;
+
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.MathUtil;
@@ -38,6 +40,18 @@ public class DrivetrainFactory {
                 );
             }
         }, drivetrain);
+    }
+
+    public static Command automaticLockHeading(Drivetrain drivetrain, RobotState robotState, DoubleSupplier throttleSupplier, DoubleSupplier strafeSupplier, Rotation2d headingToLock) {
+        return Commands.run(() -> {
+            ChassisSpeeds speeds = calculateSpeedsBasedOnJoystickInputs(drivetrain, robotState, throttleSupplier, strafeSupplier, () -> 0);
+
+            drivetrain.setControl(new SwerveRequest.FieldCentricFacingAngle()
+                .withVelocityX(speeds.vxMetersPerSecond)
+                .withVelocityY(speeds.vyMetersPerSecond)
+                .withTargetDirection(headingToLock)
+            );
+        });
     }
 
     private static ChassisSpeeds calculateSpeedsBasedOnJoystickInputs(Drivetrain drivetrain, RobotState robotState, DoubleSupplier throttleSuppler, DoubleSupplier strafeSupplier, DoubleSupplier rotationSupplier) {

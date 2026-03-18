@@ -201,6 +201,10 @@ public class Drivetrain extends SubsystemBase {
         setControl(brakeRequest);
     }
 
+    public void seedFieldCentric() {
+        io.seedFieldCentric();
+    }
+
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {
         return io.applyRequest(requestSupplier, this).withName("Swerve Request!");
     }

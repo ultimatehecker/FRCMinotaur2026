@@ -14,26 +14,27 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
 import frc.minolib.utilities.SubsystemDataProcessor;
+import frc.robot.Robot;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.ShooterConstants;
 import frc.robot.subsystems.shooter.ShooterIO.ShooterIOInputs;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 
 public class Shooter extends SubsystemBase {
     private static final LoggedTunableNumber kP = new LoggedTunableNumber("Shooter/kP");
-    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Shooter/kD");
     private static final LoggedTunableNumber kS = new LoggedTunableNumber("Shooter/kS");
     private static final LoggedTunableNumber kV = new LoggedTunableNumber("Shooter/kV");
     private static final LoggedTunableNumber kA = new LoggedTunableNumber("Shooter/kA");
 
     @RequiredArgsConstructor
     public enum ShooterGoal {
-        CLOSE(new LoggedTunableNumber("Shooter/CloseSetpoint", 2000)),
-        MEDIUM(new LoggedTunableNumber("Shooter/MediumSetpoint", 3000)),
-        FAR(new LoggedTunableNumber("Shooter/FarSetpoint", 4000)),
-        IDLE(new LoggedTunableNumber("Shooter/IdleSetpoint", 500)),
+        CLOSE(new LoggedTunableNumber("Shooter/CloseSetpoint", 4)),
+        MEDIUM(new LoggedTunableNumber("Shooter/MediumSetpoint", 8)),
+        FAR(new LoggedTunableNumber("Shooter/FarSetpoint", 12)),
+        IDLE(new LoggedTunableNumber("Shooter/IdleSetpoint", 2)),
         STOP(new LoggedTunableNumber("Shooter/StopSetpoint", 0.0));
 
         private final DoubleSupplier voltage;
@@ -47,14 +48,12 @@ public class Shooter extends SubsystemBase {
         switch (GlobalConstants.getRobot()) {
             default -> {
                 kP.initDefault(ShooterConstants.kP);
-                kD.initDefault(ShooterConstants.kD);
                 kS.initDefault(ShooterConstants.kS);
                 kV.initDefault(ShooterConstants.kV);
                 kA.initDefault(ShooterConstants.kA);
             }
             case SIMBOT -> {
                 kP.initDefault(ShooterConstants.simulatedKp);
-                kD.initDefault(ShooterConstants.simulatedKd);
                 kS.initDefault(ShooterConstants.simulatedKs);
                 kV.initDefault(ShooterConstants.simulatedKv);
                 kA.initDefault(ShooterConstants.simulatedKa);
@@ -81,6 +80,10 @@ public class Shooter extends SubsystemBase {
     private ShooterGoal goal = ShooterGoal.IDLE;
     private double appliedVoltage = 0.0;
 
+    @Getter
+    @Accessors(fluent = true)
+    private boolean manualVoltageOverride = false;
+
     public Shooter(ShooterIO io) {
         this.io = io;
 
@@ -97,6 +100,10 @@ public class Shooter extends SubsystemBase {
         synchronized (inputs) {
             Logger.processInputs("Shooter", inputs);
         }
+
+        primaryShooterMotorDisconnectedAlert.set(!primaryShooterMotorConnectedDebouncer.calculate(inputs.isFirstShooterConnected) && !Robot.isJITing());
+        secondaryShooterMotorDisconnectedAlert.set(!secondaryShooterMotorConnectedDebouncer.calculate(inputs.isSecondShooterConnected) && !Robot.isJITing());
+        thirdShooterMotorDisconnectedAlert.set(!thirdShooterMotorConnectedDebouncer.calculate(inputs.isThirdShooterConnected) && !Robot.isJITing());
     
         switch (goal) {
             case CLOSE, MEDIUM, FAR, IDLE -> appliedVoltage = goal.getVoltage();
@@ -112,6 +119,8 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setGoal(ShooterGoal goal) {
+        manualVoltageOverride = false;
+        
         if(goal == this.goal) return;
         this.goal = goal;
     }
@@ -127,6 +136,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setManualVoltage(double voltage) {
+        manualVoltageOverride = true;
         io.setVoltage(voltage);
     }
 }
