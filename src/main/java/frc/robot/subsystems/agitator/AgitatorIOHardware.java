@@ -40,11 +40,11 @@ public class AgitatorIOHardware implements AgitatorIO {
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
 
     public AgitatorIOHardware() {
-        leftAgitatorMotor = new SparkMax(25, MotorType.kBrushless);
+        leftAgitatorMotor = new SparkMax(26, MotorType.kBrushless);
         leftAgitatorEncoder = leftAgitatorMotor.getEncoder();
         leftAgitatorPIDController = leftAgitatorMotor.getClosedLoopController();
 
-        rightAgitatorMotor = new SparkMax(26, null);
+        rightAgitatorMotor = new SparkMax(21, MotorType.kBrushless);
         rightAgitatorEncoder = rightAgitatorMotor.getEncoder();
         rightAgitatorPIDController = rightAgitatorMotor.getClosedLoopController();
 

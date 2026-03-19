@@ -44,11 +44,11 @@ public class IntakeConstants {
     public static final MomentOfInertia kRollerMOI = MomentOfInertia.ofBaseUnits(0.0009, KilogramSquareMeters);
     public static final MomentOfInertia kPivotMOI = MomentOfInertia.ofBaseUnits(0.02, KilogramSquareMeters);
 
-    public static final double pivotKp = 0.5;
+    public static final double pivotKp = 0.7;
     public static final double pivotKd = 0.0;
     public static final double pivotKs = 0.0;
-    public static final double pivotKv = 0.0;
-    public static final double pivotKCos = 0.0;
+    public static final double pivotKv = 0.265;
+    public static final double pivotKCos = 0.415;
     public static final double pivotKa = 0.0;
     public static final double pivotSimulatedKp = 10.0;
     public static final double pivotSimulatedKd = 0.01;

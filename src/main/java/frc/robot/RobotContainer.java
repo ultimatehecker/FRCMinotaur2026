@@ -79,7 +79,6 @@ public class RobotContainer {
   private Shooter shooter;
   private Hood hood;
   private Hang hang;
-  private Agitator agitator;
 
   //TODO: Check the controller axis inputs and ensure that they align with the assigned values for an Xbox Elite Controller
   private CommandSimulatedXboxController driverController = new CommandSimulatedXboxController(ControllerConstants.kDriverControllerPort);
@@ -87,7 +86,7 @@ public class RobotContainer {
 
   private final LoggedDashboardChooser<Command> autoRegistry;
 
-  private ShooterGoal selectedShooterRPM = ShooterGoal.STOP;
+  private double selectedShooterRPM = 0.0;
 
   private Drivetrain buildDrivetrain() {
     if(Robot.isSimulation()) {
@@ -177,18 +176,6 @@ public class RobotContainer {
     }
   }
 
-  private Agitator buildAgitator() {
-    if(Robot.isSimulation()) {
-      return new Agitator(
-        new AgitatorIOHardware()
-      );
-    } else {
-      return new Agitator(
-        new AgitatorIOHardware()
-      );
-    }
-  }
-
   public Drivetrain getDrivetrain() {
     return drivetrain;
   }
@@ -216,11 +203,6 @@ public class RobotContainer {
   public Hang getHang() {
     return hang;
   }
-
-  public Agitator getAgitator() {
-    return agitator;
-  }
-
   public RobotContainer() {
     drivetrain = buildDrivetrain();
     intake = buildIntake();
@@ -229,7 +211,6 @@ public class RobotContainer {
     shooter = buildShooter();
     hood = buildHood();
     hang = buildHang();
-    agitator = buildAgitator();
 
     tower.setBrakeMode(() -> false);
 
@@ -244,7 +225,7 @@ public class RobotContainer {
     NamedCommands.registerCommand("Hood Minimum Position", Commands.runOnce(() -> hood.setGoal(HoodGoal.MINIMUM)));
     NamedCommands.registerCommand("Hood Midpoint Position", Commands.runOnce(() -> hood.setGoal(HoodGoal.MINIMUM)));
     NamedCommands.registerCommand("Hood Maximum Position", Commands.runOnce(() -> hood.setGoal(HoodGoal.MINIMUM)));
-    NamedCommands.registerCommand("Shooter Open Loop Mid", Commands.runOnce(() -> shooter.setGoal(ShooterGoal.MEDIUM)));
+    NamedCommands.registerCommand("Shooter Open Loop Mid", shooter.runVoltage(8));
     NamedCommands.registerCommand(
       "Hang Sequence", 
       Commands.runOnce(() -> hang.setPivotGoal(HangPivotGoal.DOWN))
@@ -298,23 +279,19 @@ public class RobotContainer {
 
       driverController
         .rightTrigger()
-        .whileTrue(Commands.runEnd(
-          () -> shooter.setGoal(selectedShooterRPM), 
-          () -> shooter.setGoal(ShooterGoal.STOP), 
-          shooter
-        ));
+        .whileTrue(shooter.runVoltage(selectedShooterRPM));
 
       driverController
         .x()
-        .onTrue(Commands.runOnce(() -> selectedShooterRPM = ShooterGoal.CLOSE));
+        .onTrue(Commands.runOnce(() -> selectedShooterRPM = 4));
 
       driverController
         .y()
-        .onTrue(Commands.runOnce(() -> selectedShooterRPM = ShooterGoal.MEDIUM));
+        .onTrue(Commands.runOnce(() -> selectedShooterRPM = 8));
 
       driverController
         .b()
-        .onTrue(Commands.runOnce(() -> selectedShooterRPM = ShooterGoal.FAR));
+        .onTrue(Commands.runOnce(() -> selectedShooterRPM = 12));
 
       //driverController
       //  .a()
@@ -326,14 +303,12 @@ public class RobotContainer {
           () -> {
             indexer.setGoal(Goal.INTAKE);
             tower.setGoal(TowerGoal.INTAKE);
-            agitator.setGoal(AgitatorGoal.FEED);
           }, 
           () -> {
             indexer.setGoal(Goal.STOP);
             tower.setGoal(TowerGoal.STOP);
-            agitator.setGoal(AgitatorGoal.STOP);
           }, 
-          indexer, tower, agitator
+          indexer, tower
         ));
 
       driverController
@@ -356,7 +331,69 @@ public class RobotContainer {
   }
 
   private void configureOperatorBindings() {
-      
+      operatorController
+        .a()
+        .whileTrue(Commands.runEnd(
+          () -> indexer.setGoal(Goal.INTAKE), 
+          () -> indexer.setGoal(Goal.STOP), 
+          indexer
+        ));
+
+      operatorController
+        .b()
+        .whileTrue(Commands.runEnd(
+          () -> indexer.setGoal(Goal.EXHAUST), 
+          () -> indexer.setGoal(Goal.STOP), 
+          indexer
+        ));
+
+        operatorController
+        .x()
+        .whileTrue(Commands.runEnd(
+          () -> tower.setGoal(TowerGoal.INTAKE), 
+          () -> tower.setGoal(TowerGoal.STOP), 
+          tower
+        ));
+
+      operatorController
+        .y()
+        .whileTrue(Commands.runEnd(
+          () -> tower.setGoal(TowerGoal.EXHAUST), 
+          () -> tower.setGoal(TowerGoal.STOP), 
+          tower
+        ));
+
+      operatorController
+        .rightBumper()
+        .whileTrue(Commands.runEnd(
+          () -> intake.setRollerGoal(RollerGoal.INTAKE), 
+          () -> intake.setRollerGoal(RollerGoal.STOP), 
+          tower
+        ));
+
+      operatorController
+        .rightTrigger()
+        .whileTrue(Commands.runEnd(
+          () -> intake.setRollerGoal(RollerGoal.EXHAUST), 
+          () -> intake.setRollerGoal(RollerGoal.STOP), 
+          tower
+        ));
+
+        operatorController
+        .povUp()
+        .whileTrue(Commands.runEnd(
+          () -> hang.setPivotGoal(HangPivotGoal.UP), 
+          () -> hang.setPivotGoal(HangPivotGoal.STOP), 
+          tower
+        ));
+
+      operatorController
+        .povDown()
+        .whileTrue(Commands.runEnd(
+          () -> hang.setPivotGoal(HangPivotGoal.DOWN), 
+          () -> hang.setPivotGoal(HangPivotGoal.STOP), 
+          tower
+        ));
   }
 
   public Command getAutonomousCommand() {

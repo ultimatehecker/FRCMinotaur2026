@@ -26,8 +26,8 @@ public class ControllerMappings {
         xboxAxes.put("LeftY", 1);
         xboxAxes.put("RightX", 4);
         xboxAxes.put("RightY",5);
-        xboxAxes.put("RightTrigger", 2);
-        xboxAxes.put("LeftTrigger", 3);
+        xboxAxes.put("RightTrigger", 3);
+        xboxAxes.put("LeftTrigger", 2);
 
         XBOX_MAPPING = new ControllerMapping(xboxButtons, xboxAxes);
 
