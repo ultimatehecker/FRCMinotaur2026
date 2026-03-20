@@ -57,6 +57,8 @@ public interface DrivetrainIO {
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier, Subsystem subsystemRequired);
 
+    public void seedFieldCentric();
+
     public void setBrakeMode(boolean enable);
 
     public default void updateSimulationState() {};

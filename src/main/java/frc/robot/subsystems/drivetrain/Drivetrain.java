@@ -1,15 +1,20 @@
 package frc.robot.subsystems.drivetrain;
 
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.Volts;
+
 import java.util.function.Supplier;
 
 import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 
 import org.littletonrobotics.junction.Logger;
 
+import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveRequest.ApplyRobotSpeeds;
-
+import com.google.flatbuffers.Constants;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
@@ -21,7 +26,8 @@ import edu.wpi.first.units.measure.Force;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.minolib.swerve.pathplanner.PathPlannerLogging;
 import frc.minolib.utilities.SubsystemDataProcessor;
@@ -42,6 +48,56 @@ public class Drivetrain extends SubsystemBase {
     private final ApplyRobotSpeeds pathplannerRequest = new ApplyRobotSpeeds()
         .withDriveRequestType(SwerveModule.DriveRequestType.Velocity)
         .withDesaturateWheelSpeeds(true);
+
+    private final SwerveRequest.SysIdSwerveTranslation translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
+    private final SwerveRequest.SysIdSwerveRotation rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
+    private final SwerveRequest.SysIdSwerveSteerGains steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
+
+    private final SysIdRoutine translationSysIdRoutine = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null,
+            Volts.of(7),
+            Seconds.of(5),
+            state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())
+        ),
+        new SysIdRoutine.Mechanism(
+            output -> io.setControl(translationCharacterization.withVolts(output)), null, this
+        )
+    );
+
+    private final SysIdRoutine rotationSysIdRoutine = new SysIdRoutine(
+        new SysIdRoutine.Config(
+                Volts.of(Math.PI / 6).per(Second),
+                Volts.of(Math.PI),
+                Seconds.of(5),
+                state -> SignalLogger.writeString("SysIdRotation_State", state.toString())
+        ),
+        new SysIdRoutine.Mechanism(
+            output -> {
+                /* output is actually radians per second, but SysId only supports "volts" */
+                io.setControl(rotationCharacterization.withRotationalRate(output.in(Volts)));
+                SignalLogger.writeDouble("Rotational_Rate", output.in(Volts));
+            },
+            null,
+            this
+        )
+    );
+
+    private final SysIdRoutine steerSysIdRoutine = new SysIdRoutine(
+        new SysIdRoutine.Config(
+            null,
+            Volts.of(7),
+            null,
+            state -> SignalLogger.writeString("SysIdSteer_State", state.toString())
+        ),
+        new SysIdRoutine.Mechanism(volts -> io.setControl(steerCharacterization.withVolts(volts)), null, this)
+    );
+
+    public enum SysIdMechanism {
+        SWERVE_TRANSLATION,
+        SWERVE_ROTATION,
+        SWERVE_STEER
+    }
 
     public Drivetrain(DrivetrainIO io, RobotState robotState) {
         this.io = io;
@@ -65,6 +121,8 @@ public class Drivetrain extends SubsystemBase {
 
         Logger.recordOutput("Drivetrain/LatencyPeriodicSeconds", RobotTime.getTimestampSeconds() - timestamp);
         Logger.recordOutput("Drivetrain/CurrentCommand", (getCurrentCommand() == null) ? "Default" : getCurrentCommand().getName());
+
+        LoggedTracer.record("DrivetrainPeriodicMS");
     }
 
     private void configurePathPlanner() {
@@ -117,8 +175,34 @@ public class Drivetrain extends SubsystemBase {
         );
     }
 
+    public Command sysIdQuasistatic(SysIdMechanism mechanism, SysIdRoutine.Direction direction) {
+        final SysIdRoutine routine = switch (mechanism) {
+            case SWERVE_TRANSLATION -> translationSysIdRoutine;
+            case SWERVE_ROTATION -> rotationSysIdRoutine;
+            case SWERVE_STEER -> steerSysIdRoutine;
+            default -> throw new IllegalArgumentException(String.format("Mechanism %s is not supported.", mechanism));
+        };
+
+        return routine.quasistatic(direction);
+    }
+    
+    public Command sysIdDynamic(SysIdMechanism mechanism, SysIdRoutine.Direction direction) {
+        final SysIdRoutine routine = switch (mechanism) {
+            case SWERVE_TRANSLATION -> translationSysIdRoutine;
+            case SWERVE_ROTATION -> rotationSysIdRoutine;
+            case SWERVE_STEER -> steerSysIdRoutine;
+            default -> throw new IllegalArgumentException(String.format("Mechanism %s is not supported.", mechanism));
+        };
+
+        return routine.dynamic(direction);
+    }
+
     public void holdXStance() {
         setControl(brakeRequest);
+    }
+
+    public void seedFieldCentric() {
+        io.seedFieldCentric();
     }
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {

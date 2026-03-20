@@ -1,0 +1,31 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooter Open Loop Close-Mid"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CenterStartingToHang"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Index to Shooter"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

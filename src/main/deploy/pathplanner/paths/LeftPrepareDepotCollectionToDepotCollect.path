@@ -1,0 +1,65 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 1.1697847682119207,
+        "y": 5.4506870860927155
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 0.9107117437722425,
+        "y": 5.353001186239621
+      },
+      "isLocked": false,
+      "linkedName": "LeftDepotPrepareCollectionPose"
+    },
+    {
+      "anchor": {
+        "x": 0.9,
+        "y": 7.105951986754967
+      },
+      "prevControl": {
+        "x": 0.9871192052980134,
+        "y": 6.80103476821192
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "LeftDepotCollectionPose"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [
+    {
+      "fieldPosition": {
+        "x": 4.625,
+        "y": 4.0
+      },
+      "rotationOffset": 180.0,
+      "minWaypointRelativePos": 0.0,
+      "maxWaypointRelativePos": 1.0,
+      "name": "Point Towards Zone"
+    }
+  ],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 3.0,
+    "maxAcceleration": 3.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 142.0
+  },
+  "reversed": false,
+  "folder": "Left",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 154.0
+  },
+  "useDefaultConstraints": true
+}

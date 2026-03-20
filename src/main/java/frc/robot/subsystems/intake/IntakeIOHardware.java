@@ -50,6 +50,8 @@ import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
 
 import frc.minolib.hardware.MinoCANDevice;
+import frc.minolib.rev.REVUtility;
+import frc.robot.RobotState;
 import frc.robot.constants.IntakeConstants;
 
 public class IntakeIOHardware implements IntakeIO {
@@ -66,6 +68,7 @@ public class IntakeIOHardware implements IntakeIO {
     private final StatusSignal<Temperature> rollerTemperature;
 
     private final StatusSignal<Angle> absoluteEncoderPosition;
+    private final StatusSignal<AngularVelocity> absoluteEncoderVelocity;
 
     private final NeutralOut neutralRequest = new NeutralOut();
     private final VoltageOut voltageRequest = new VoltageOut(0.0).withEnableFOC(true).withUpdateFreqHz(0.0);
@@ -80,12 +83,13 @@ public class IntakeIOHardware implements IntakeIO {
 
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
 
-    public IntakeIOHardware(MinoCANDevice rollerCANDevice, MinoCANDevice pivotCANDevice, MinoCANDevice pivotEncoderCANDevice) {
-        rollerMotor = new TalonFX(rollerCANDevice.deviceNumber, rollerCANDevice.CANBus.getParent());
+    public IntakeIOHardware() {
+        rollerMotor = new TalonFX(15, "*");
 
         rollerMotorConfiguration = new TalonFXConfiguration();
         rollerMotorConfiguration.MotorOutput.Inverted = IntakeConstants.kRollerMotorInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive;
-        rollerMotorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Coast;
+        rollerMotorConfiguration.Feedback.RotorToSensorRatio = IntakeConstants.kRollerMotorReduction * 2 * Math.PI;
+        rollerMotorConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Brake;
         rollerMotorConfiguration.CurrentLimits.SupplyCurrentLimitEnable = true;
         rollerMotorConfiguration.CurrentLimits.SupplyCurrentLimit = IntakeConstants.kRollerMotorSupplyLimit.in(Amps);
         rollerMotorConfiguration.Feedback.VelocityFilterTimeConstant = IntakeConstants.kRollerVelocityFilterTimeConstant;
@@ -93,23 +97,21 @@ public class IntakeIOHardware implements IntakeIO {
         simpleTryUntilOk(5, () -> rollerMotor.getConfigurator().apply(rollerMotorConfiguration));
         simpleTryUntilOk(5, () -> rollerMotor.optimizeBusUtilization(0, 1.0));
 
-        pivotAbsoluteEncoder = new CANcoder(pivotEncoderCANDevice.deviceNumber, pivotEncoderCANDevice.CANBus.getParent());
+        pivotAbsoluteEncoder = new CANcoder(22, "*");
 
         pivotAbsoluteEncoderConfiguration = new CANcoderConfiguration();
         pivotAbsoluteEncoderConfiguration.MagnetSensor.AbsoluteSensorDiscontinuityPoint = 1;
-        pivotAbsoluteEncoderConfiguration.MagnetSensor.SensorDirection = SensorDirectionValue.CounterClockwise_Positive;
+        pivotAbsoluteEncoderConfiguration.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
         pivotAbsoluteEncoderConfiguration.MagnetSensor.MagnetOffset = IntakeConstants.kPivotAbsoluteEncoderOffset.in(Rotations);    
 
         simpleTryUntilOk(5, () -> pivotAbsoluteEncoder.getConfigurator().apply(pivotAbsoluteEncoderConfiguration));
         simpleTryUntilOk(5, () -> pivotAbsoluteEncoder.optimizeBusUtilization(0, 1.0));
 
-        pivotMotor = new SparkMax(pivotCANDevice.deviceNumber, MotorType.kBrushless);
-        pivotEncoder = pivotMotor.getEncoder();
-        pivotPositionController = pivotMotor.getClosedLoopController();
+        pivotMotor = new SparkMax(14, MotorType.kBrushless);
 
         pivotMotorConfiguration = new SparkMaxConfig()
             .inverted(IntakeConstants.kPivotMotorInverted)
-            .idleMode(IdleMode.kCoast)
+            .idleMode(IdleMode.kBrake)
             .smartCurrentLimit((int) IntakeConstants.kPivotMotorSupplyLimit.in(Amps), 50)
             .voltageCompensation(12.0);
 
@@ -129,12 +131,14 @@ public class IntakeIOHardware implements IntakeIO {
             .outputCurrentPeriodMs(20);
 
         pivotMotorConfiguration.closedLoop
-            .p(0)
-            .i(0)
-            .d(0);
+            .p(IntakeConstants.pivotKp)
+            .i(0.0)
+            .d(IntakeConstants.pivotKd);
 
         tryUntilOk(pivotMotor, 5, () -> pivotMotor.configure(pivotMotorConfiguration, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters));
-        tryUntilOk(pivotMotor, 5, () -> pivotEncoder.setPosition(0.0));
+
+        pivotEncoder = pivotMotor.getEncoder();
+        pivotPositionController = pivotMotor.getClosedLoopController();
 
         rollerPosition = rollerMotor.getPosition();
         rollerVelocity = rollerMotor.getVelocity();
@@ -145,6 +149,7 @@ public class IntakeIOHardware implements IntakeIO {
         rollerTemperature = rollerMotor.getDeviceTemp();
 
         absoluteEncoderPosition = pivotAbsoluteEncoder.getAbsolutePosition();
+        absoluteEncoderVelocity = pivotAbsoluteEncoder.getVelocity();
 
         simpleTryUntilOk(5, () -> BaseStatusSignal.setUpdateFrequencyForAll(
             50.0, 
@@ -155,12 +160,17 @@ public class IntakeIOHardware implements IntakeIO {
             rollerSupplyCurrent,
             rollerTorqueCurrent,
             rollerTemperature,
-            absoluteEncoderPosition
+            absoluteEncoderPosition,
+            absoluteEncoderVelocity
         ));
+        
+        tryUntilOk(pivotMotor, 5, () -> pivotEncoder.setPosition(absoluteEncoderPosition.getValue().in(Radians)));
     }
 
     @Override
     public void updateInputs(IntakeIOInputs inputs) {
+        REVUtility.sparkStickyFault = false;
+
         inputs.rollerPosition = rollerPosition.getValue().in(Radians);
         inputs.rollerVelocity = rollerVelocity.getValue().in(RadiansPerSecond);
         inputs.rollerAcceleration = rollerAcceleration.getValue().in(RadiansPerSecondPerSecond);
@@ -168,12 +178,24 @@ public class IntakeIOHardware implements IntakeIO {
         inputs.rollerSupplyCurrentAmperes = rollerSupplyCurrent.getValue().in(Amps);
         inputs.rollerTorqueCurrentAmperes = rollerTorqueCurrent.getValue().in(Amps);
         inputs.rollerTemperatureCelsius = rollerTemperature.getValue().in(Celsius);
+        inputs.rollerMotorConnected = BaseStatusSignal.isAllGood(
+            rollerPosition, 
+            rollerVelocity,
+            rollerAcceleration,
+            rollerAppliedVoltage,
+            rollerSupplyCurrent,
+            rollerTorqueCurrent,
+            rollerTemperature
+        );
 
-        ifOkOrDefault(pivotMotor, pivotEncoder::getPosition, inputs.pivotPosition);
-        ifOkOrDefault(pivotMotor, pivotEncoder::getVelocity, inputs.pivotVelocity);
-        ifOkOrDefault(pivotMotor, new DoubleSupplier[] { pivotMotor::getBusVoltage, pivotMotor::getAppliedOutput }, x -> x[0] * x[1], inputs.pivotAppliedVoltage);
-        ifOkOrDefault(pivotMotor, pivotMotor::getOutputCurrent, inputs.pivotSupplyCurrentAmperes);
-        ifOkOrDefault(pivotMotor, pivotMotor::getMotorTemperature, inputs.pivotMotorTempuratureCelcius);
+        inputs.pivotPosition = pivotEncoder.getPosition();
+        inputs.pivotVelocity = pivotEncoder.getVelocity();
+        inputs.pivotAppliedVoltage = pivotMotor.getAppliedOutput();
+        inputs.pivotSupplyCurrentAmperes = pivotMotor.getOutputCurrent();
+        inputs.pivotMotorTempuratureCelcius = pivotMotor.getMotorTemperature();
+
+        inputs.pivotAbsoluteEncoderPosition = absoluteEncoderPosition.getValue().in(Radians);
+        inputs.pivotAbsoluteEncoderVelocity = absoluteEncoderVelocity.getValue().in(RadiansPerSecond);
     }
 
     @Override
@@ -235,7 +257,8 @@ public class IntakeIOHardware implements IntakeIO {
             rollerSupplyCurrent,
             rollerTorqueCurrent,
             rollerTemperature,
-            absoluteEncoderPosition
+            absoluteEncoderPosition,
+            absoluteEncoderVelocity
         );
     }
 }

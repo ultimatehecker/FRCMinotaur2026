@@ -1,0 +1,55 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CenterStartingToOutpostCollection"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooter Open Loop Mid"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Hood Midpoint Position"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CenterOutpostCollectionToMidShooting"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Index to Shooter"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 5.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "CenterMidShootingToHang"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

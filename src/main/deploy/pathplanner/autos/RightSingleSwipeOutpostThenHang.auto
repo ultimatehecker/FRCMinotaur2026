@@ -1,0 +1,97 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RightStartingToCenterCollect"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "StopAndRetractIntake"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooter Open Loop Mid"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Hood Midpoint Position"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RightCenterCollectToMidShooting"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Index to Shooter"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 5.0
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Stop Index to Shooter"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RightMidShootingToOutpostCollection"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooter Open Loop Close-Mid"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Hood Minimum-Midpoint Position"
+          }
+        },
+        {
+          "type": "wait",
+          "data": {
+            "waitTime": 2.0
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RightOutpostCollectionToHang"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Index to Shooter"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

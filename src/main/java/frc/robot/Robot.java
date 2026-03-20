@@ -36,6 +36,7 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Watchdog;
+import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -54,25 +55,25 @@ public class Robot extends LoggedRobot {
   private Command autonomousCommand;
   private final RobotContainer robotContainer;
 
-  //private static final double loopOverrunWarningTimeout = 0.2;
-  //private static final double canErrorTimeThreshold = 0.5; 
-  //private static final double canivoreErrorTimeThreshold = 0.5;
-  //private static final double lowBatteryVoltage = 11.8;
-  //private static final double lowBatteryDisabledTime = 1.5;
-  //private static final double lowBatteryMinCycleCount = 10;
-  //private static int lowBatteryCycleCount = 0;
+  private static final double loopOverrunWarningTimeout = 0.2;
+  private static final double canErrorTimeThreshold = 0.5; 
+  private static final double canivoreErrorTimeThreshold = 0.5;
+  private static final double lowBatteryVoltage = 11.8;
+  private static final double lowBatteryDisabledTime = 1.5;
+  private static final double lowBatteryMinCycleCount = 10;
+  private static int lowBatteryCycleCount = 0;
 
-  //private final Timer canInitialErrorTimer = new Timer();
-  //private final Timer canErrorTimer = new Timer();
-  //private final Timer canivoreErrorTimer = new Timer();
-  //private final Timer disabledTimer = new Timer();
-  //private MinoCANBus canivoreBus;
+  private final Timer canInitialErrorTimer = new Timer();
+  private final Timer canErrorTimer = new Timer();
+  private final Timer canivoreErrorTimer = new Timer();
+  private final Timer disabledTimer = new Timer();
+  private MinoCANBus canivoreBus;
 
-  //private final Alert canErrorAlert = new Alert("CAN errors detected, robot may not be controllable.", AlertType.kError);
-  //private final Alert canivoreErrorAlert = new Alert("CANivore errors detected, robot may not be controllable.", AlertType.kError);
-  //private final Alert lowBatteryAlert = new Alert("Battery voltage is very low, consider turning off the robot or replacing the battery.", AlertType.kWarning);
-  //private final Alert jitAlert = new Alert("Please wait to enable, JITing in progress.", AlertType.kWarning);
-  //private final Alert noAutoSelectedAlert = new Alert("No auto selected: please select an auto", AlertType.kWarning);
+  private final Alert canErrorAlert = new Alert("CAN errors detected, robot may not be controllable.", AlertType.kError);
+  private final Alert canivoreErrorAlert = new Alert("CANivore errors detected, robot may not be controllable.", AlertType.kError);
+  private final Alert lowBatteryAlert = new Alert("Battery voltage is very low, consider turning off the robot or replacing the battery.", AlertType.kWarning);
+  private final Alert jitAlert = new Alert("Please wait to enable, JITing in progress.", AlertType.kWarning);
+  private final Alert noAutoSelectedAlert = new Alert("No auto selected: please select an auto", AlertType.kWarning);
 
   public Robot() {
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -94,7 +95,7 @@ public class Robot extends LoggedRobot {
         Logger.addDataReceiver(new NT4Publisher());
 
         if(GlobalConstants.getRobot() == RobotType.COMPBOT) {
-          //LoggedPowerDistribution.getInstance(0, ModuleType.kCTRE)
+          LoggedPowerDistribution.getInstance(0, ModuleType.kCTRE);
         }
 
         break;
@@ -109,10 +110,10 @@ public class Robot extends LoggedRobot {
         break;
     }
 
+    LiveWindow.disableAllTelemetry();
     SignalLogger.enableAutoLogging(false); // might disable later
     Logger.start();
 
-    /*
     Pathfinding.setPathfinder(new LocalADStarAK());
 
     Map<String, Integer> commandCounts = new HashMap<>();
@@ -147,19 +148,17 @@ public class Robot extends LoggedRobot {
     canivoreBus = GlobalConstants.kCANivoreBus;
 
     CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
-    */
 
-    robotContainer = new RobotContainer();
+    //robotContainer = new RobotContainer();
   }
 
   @Override
   public void robotPeriodic() {
-    //LoggedTracer.reset();
+    LoggedTracer.reset();
 
     CommandScheduler.getInstance().run();
-    //LoggedTracer.record("Commands");
+    LoggedTracer.record("Commands");
 
-    /* 
     var canStatus = RobotController.getCANStatus();
     Logger.recordOutput("CANStatus/OffCount", canStatus.busOffCount);
     Logger.recordOutput("CANStatus/TxFullCount", canStatus.txFullCount);
@@ -185,9 +184,7 @@ public class Robot extends LoggedRobot {
     // JIT alert
     jitAlert.set(isJITing());
 
-    */
-
-    //LoggedTracer.record("RobotPeriodic");
+    LoggedTracer.record("RobotPeriodic");
   }
 
   @Override

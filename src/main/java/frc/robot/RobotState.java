@@ -12,11 +12,14 @@ import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Twist2d;
+import edu.wpi.first.math.interpolation.InterpolatingTreeMap;
+import edu.wpi.first.math.interpolation.InverseInterpolator;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.minolib.math.ConcurrentTimeInterpolatableBuffer;
+import frc.minolib.math.DoubleInterpolatableTreeMap;
 import frc.robot.constants.GlobalConstants;
 
 public class RobotState {
@@ -264,12 +267,54 @@ public class RobotState {
         Logger.recordOutput("RobotState/FusedChassisSpeedFieldFrame", getLatestFusedFieldRelativeChassisSpeeds());
     }
 
-    private final AtomicReference<Double> intakeRollerPosition = new AtomicReference<>(0.0);
-    private final AtomicReference<Double> intakeRollerVelocity = new AtomicReference<>(0.0);
     private final AtomicReference<Double> intakePivotPosition = new AtomicReference<>(0.0);
     private final AtomicReference<Double> intakePivotVelocity = new AtomicReference<>(0.0);
+    private final AtomicReference<Double> intakePivotAcceleration = new AtomicReference<>(0.0);
+    private final AtomicReference<Double> intakeRollerVelocity = new AtomicReference<>(0.0);
+    private final AtomicReference<Double> intakeRollerAcceleration = new AtomicReference<>(0.0);
 
-    public void setIntakePivotRadians(double radians) {
-        intakePivotPosition.set(radians);
+    public void addIntakeMotionMeasurements(
+        double pivotPositionRadians,
+        double pivotVelocityRadiansPerSecond,
+        double pivotAccelerationRadiansPerSecond2,
+        double rollerVelocityRadiansPerSecond,
+        double rollerAccelerationRadiansPerSecond2
+    ) {
+        intakePivotPosition.set(pivotPositionRadians);
+        intakePivotVelocity.set(pivotVelocityRadiansPerSecond);
+        intakePivotAcceleration.set(pivotAccelerationRadiansPerSecond2);
+        intakeRollerVelocity.set(rollerVelocityRadiansPerSecond);
+        intakeRollerAcceleration.set(rollerAccelerationRadiansPerSecond2);
     }
+
+    public double getIntakePivotPosition() {
+        return intakePivotPosition.get();
+    }
+
+    public double getIntakePivotVelocity() {
+        return intakePivotVelocity.get();
+    }
+
+    public double getIntakePivotAcceleration() {
+        return intakePivotAcceleration.get();
+    }
+
+    /**
+     * @return Returns the intake roller velocity in radians per second
+     */
+    public double getIntakeRollerVelocity() {
+        return intakeRollerVelocity.get();
+    }
+
+    /**
+     * 
+     * @return Returns the intake roller velocity in radians per second
+     */
+    public double getIntakeRollerAcceleration() {
+        return intakeRollerAcceleration.get();
+    }
+
+    private InterpolatingTreeMap shooterLUT;
+    private InterpolatingTreeMap hoodLUT;
+    private InterpolatingTreeMap tofLUT;
 }

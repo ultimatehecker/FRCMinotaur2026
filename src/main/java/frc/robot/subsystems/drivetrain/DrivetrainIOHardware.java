@@ -80,9 +80,9 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
         accelerationX = getPigeon2().getAccelerationX();
         accelerationY = getPigeon2().getAccelerationY();
 
-        BaseStatusSignal.setUpdateFrequencyForAll(250, angularYawVelocity);
+        BaseStatusSignal.setUpdateFrequencyForAll(250.0, angularYawVelocity);
         BaseStatusSignal.setUpdateFrequencyForAll(
-            100,
+            50,
             angularPitchVelocity,
             angularRollVelocity,
             roll,
@@ -179,10 +179,17 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
         // }
     }
 
+
     @Override
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier, Subsystem subsystemRequired) {
         return Commands.run(() -> super.setControl(requestSupplier.get()), subsystemRequired);
     }
+
+    @Override
+    public void seedFieldCentric() {
+        super.seedFieldCentric();
+    }
+
 
     @Override
     public void setControl(SwerveRequest request) {
