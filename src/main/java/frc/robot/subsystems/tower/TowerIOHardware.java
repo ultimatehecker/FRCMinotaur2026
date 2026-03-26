@@ -26,7 +26,6 @@ import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import frc.minolib.hardware.MinoCANDevice;
 import frc.minolib.rev.REVUtility;
 import frc.robot.constants.TowerConstants;
-import frc.robot.subsystems.hood.HoodIO.HoodIOInputs;
 import frc.robot.subsystems.tower.TowerIO.TowerIOInputs;
 
 public class TowerIOHardware implements TowerIO {

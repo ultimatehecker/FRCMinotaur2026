@@ -3,7 +3,6 @@ package frc.robot.subsystems.tower;
 import org.littletonrobotics.junction.AutoLog;
 
 import frc.minolib.utilities.SubsystemDataProcessor;
-import frc.robot.subsystems.hood.HoodIO.HoodIOInputs;
 
 public interface TowerIO {
     @AutoLog

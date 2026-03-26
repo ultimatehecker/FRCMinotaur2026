@@ -237,6 +237,16 @@ public class Intake extends SubsystemBase {
         Logger.recordOutput("Intake/Roller/AppliedVoltage", rollerVoltage);
         Logger.recordOutput("Intake/Roller/WantedVoltage", rollerGoal.getRollerVoltage());
 
+        Robot.batteryLogger.reportCurrentUsage(
+            "Intake/Pivot",
+            inputs.pivotMotorConnected ? inputs.pivotSupplyCurrentAmperes : 0.0
+        );
+
+        Robot.batteryLogger.reportCurrentUsage(
+            "Intake/Roller",
+            inputs.rollerMotorConnected ? inputs.rollerSupplyCurrentAmperes : 0.0
+        );
+
         LoggedTracer.record("IntakePeriodicMS");
     }
 

@@ -314,7 +314,11 @@ public class RobotState {
         return intakeRollerAcceleration.get();
     }
 
-    private InterpolatingTreeMap shooterLUT;
-    private InterpolatingTreeMap hoodLUT;
-    private InterpolatingTreeMap tofLUT;
+    //private final InterpolatingTreeMap shooterHubLUT;
+    //private final InterpolatingTreeMap hoodHubLUT;
+    //private final InterpolatingTreeMap tofHubLUT;
+
+    //private final InterpolatingTreeMap shooterPassingLUT;
+    //private final InterpolatingTreeMap hoodPassingLUT;
+    //private final InterpolatingTreeMap tofPassingLUT;
 }
