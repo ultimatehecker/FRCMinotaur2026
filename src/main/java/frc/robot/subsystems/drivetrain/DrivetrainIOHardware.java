@@ -82,7 +82,7 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
 
         BaseStatusSignal.setUpdateFrequencyForAll(250, angularYawVelocity);
         BaseStatusSignal.setUpdateFrequencyForAll(
-            50,
+            250,
             angularPitchVelocity,
             angularRollVelocity,
             roll,
@@ -90,13 +90,6 @@ public class DrivetrainIOHardware extends SwerveDrivetrain<TalonFX, TalonFX, CAN
             accelerationX,
             accelerationY
         );
-
-        getPigeon2().optimizeBusUtilization(0);
-        
-        for(SwerveModule<TalonFX, TalonFX, CANcoder> module : getModules()) {
-            module.getDriveMotor().optimizeBusUtilization(0);
-            module.getSteerMotor().optimizeBusUtilization(0);
-        }
 
         registerTelemetry(telemetryConsumer);
     }
