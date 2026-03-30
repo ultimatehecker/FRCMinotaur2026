@@ -35,16 +35,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 
 public class Intake extends SubsystemBase {
-    private static final LoggedTunableNumber kP = new LoggedTunableNumber("Intake/kP");
-    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Intake/kD");
-    private static final LoggedTunableNumber kS = new LoggedTunableNumber("Intake/kS");
-    private static final LoggedTunableNumber kG = new LoggedTunableNumber("Intake/kG");
-    private static final LoggedTunableNumber kA = new LoggedTunableNumber("Intake/kA");
+    private static final LoggedTunableNumber pivotkP = new LoggedTunableNumber("Intake/Gains/Pivot/kP");
+    private static final LoggedTunableNumber pivotkD = new LoggedTunableNumber("Intake/Gains/Pivot/kD");
+    private static final LoggedTunableNumber pivotkS = new LoggedTunableNumber("Intake/Gains/Pivot/kS");
+    private static final LoggedTunableNumber pivotkG = new LoggedTunableNumber("Intake/Gains/Pivot/kG");
+    private static final LoggedTunableNumber pivotkA = new LoggedTunableNumber("Intake/Gains/Pivot/kA");
     
     private static final LoggedTunableNumber kPivotMaximumAngle = new LoggedTunableNumber("Intake/Pivot/MaximumAngle", IntakeConstants.kIntakeMaximumPosition.in(Radians));
     private static final LoggedTunableNumber kMaximumVelocityRadiansPerSecond = new LoggedTunableNumber("Intake/Pivot/MaxVelocityRadiansPerSecond", IntakeConstants.kPivotMaximumRotationalVelocity.in(RadiansPerSecond));
     private static final LoggedTunableNumber kMaximumAccelerationRadiansPerSecond2 = new LoggedTunableNumber("Intake/Pivot/MaxAccelerationRadiansPerSecond2", IntakeConstants.kPivotMaximumRotationalAcceleration.in(RadiansPerSecondPerSecond));
-    private static final LoggedTunableNumber kHomingVolts = new LoggedTunableNumber("Intake/Pivot/HomingVoltage", -3.0);
+    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Intake/Pivot/HomingVoltage", -3.0);
     private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Intake/Pivot/HomingTimeSeconds", 0.4);
     private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Intake/Pivot/HomingVelocityThreshold", 0.1);
 
@@ -76,21 +76,33 @@ public class Intake extends SubsystemBase {
         }
     }
 
+    public enum PivotControlMode {
+        COAST,
+        OPEN_LOOP,
+        CLOSED_LOOP
+    }
+
+    public enum RollerControlMode {
+        COAST,
+        OPEN_LOOP,
+        CLOSED_LOOP
+    }
+
     static {
         switch (GlobalConstants.getRobot()) {
             default -> {
-                kP.initDefault(IntakeConstants.pivotKp);
-                kD.initDefault(IntakeConstants.pivotKd);
-                kS.initDefault(IntakeConstants.pivotKs);
-                kG.initDefault(IntakeConstants.pivotKCos);
-                kA.initDefault(IntakeConstants.pivotKa);
+                pivotkP.initDefault(IntakeConstants.pivotKp);
+                pivotkD.initDefault(IntakeConstants.pivotKd);
+                pivotkS.initDefault(IntakeConstants.pivotKs);
+                pivotkG.initDefault(IntakeConstants.pivotKCos);
+                pivotkA.initDefault(IntakeConstants.pivotKa);
             }
             case SIMBOT -> {
-                kP.initDefault(IntakeConstants.pivotSimulatedKp);
-                kD.initDefault(IntakeConstants.pivotSimulatedKd);
-                kS.initDefault(IntakeConstants.pivotSimulatedKs);
-                kG.initDefault(IntakeConstants.pivotSimulatedKCos);
-                kA.initDefault(IntakeConstants.pivotSimulatedKa);
+                pivotkP.initDefault(IntakeConstants.pivotSimulatedKp);
+                pivotkD.initDefault(IntakeConstants.pivotSimulatedKd);
+                pivotkS.initDefault(IntakeConstants.pivotSimulatedKs);
+                pivotkG.initDefault(IntakeConstants.pivotSimulatedKCos);
+                pivotkA.initDefault(IntakeConstants.pivotSimulatedKa);
             }
         }
     }
@@ -109,22 +121,25 @@ public class Intake extends SubsystemBase {
 
     private TrapezoidProfile profile;
     @Getter private State setpoint = new State();
-    @Getter private PivotGoal goal = PivotGoal.PARKED;
+    @Getter private PivotGoal pivotGoal = PivotGoal.PARKED;
+    @Getter private RollerGoal rollerGoal = RollerGoal.STOP;
     private boolean stopProfile = false;
+
+    @AutoLogOutput(key = "Intake/Pivot/ControlMode")
+    private PivotControlMode pivotControlMode = PivotControlMode.CLOSED_LOOP;
+    private double pivotOpenLoopVoltage = 0.0;
+
+    @AutoLogOutput(key = "Intake/Roller/ControlMode")
+    private RollerControlMode rollerControlMode = RollerControlMode.OPEN_LOOP;
+    private double rollerOpenLoopVoltage = 0.0;
 
     @AutoLogOutput(key = "Intake/Pivot/HomedPositionRadians")
     private double pivotHomedPosition = 0.0;
 
     @AutoLogOutput(key = "Intake/Pivot/Homed")
-    @Getter
-    private boolean pivotHomed = true;
-
-    @Getter 
-    private RollerGoal rollerGoal = RollerGoal.STOP;
-    private double rollerVoltage = 0.0;
+    @Getter private boolean pivotHomed = true;
 
     private Debouncer pivotHomingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
-    private final Command pivotHomingCommand;
 
     @Getter
     @Accessors(fluent = true)
@@ -151,8 +166,6 @@ public class Intake extends SubsystemBase {
             }
         },
         io);
-        
-        pivotHomingCommand = backupHomingSequence();
     }
 
     @Override
@@ -165,8 +178,8 @@ public class Intake extends SubsystemBase {
         rollerMotorDisconnectedAlert.set(!rollerMotorConnectedDebouncer.calculate(inputs.rollerMotorConnected) && !Robot.isJITing());
 
         // Update tunable numbers
-        if (kP.hasChanged(hashCode()) || kD.hasChanged(hashCode())) {
-            io.setPivotPID(kP.get(), 0.0, kD.get());
+        if (pivotkP.hasChanged(hashCode()) || pivotkD.hasChanged(hashCode())) {
+            io.setPivotPID(pivotkP.get(), 0.0, pivotkD.get());
         }
 
         if (kMaximumVelocityRadiansPerSecond.hasChanged(hashCode()) || kMaximumAccelerationRadiansPerSecond2.hasChanged(hashCode())) {
@@ -181,61 +194,82 @@ public class Intake extends SubsystemBase {
         pivotWantsToDeploy = !pivotHomed || (getPivotMeasuredAngleRadians() < kPivotMaximumAngle.get() / 2.0);
 
         // Home on enable
-        if (DriverStation.isEnabled() && !pivotHomed && !pivotHomingCommand.isScheduled()) {
-            CommandScheduler.getInstance().schedule(pivotHomingCommand);
-        }
-
-        // Run profile
-        final boolean shouldRunProfile = !stopProfile
-            && brakeModeEnabled.getAsBoolean()
-            && (pivotHomed || GlobalConstants.getRobot() == GlobalConstants.RobotType.SIMBOT)
-            && DriverStation.isEnabled();
-
-        Logger.recordOutput("Intake/Pivot/RunningProfile", shouldRunProfile);
-
-        if (shouldRunProfile) {
-            var goalState = new State(MathUtil.clamp(goal.getAngleRadians(), 0.0, kPivotMaximumAngle.get()), 0.0);
-            double previousVelocity = setpoint.velocity;
-            setpoint = profile.calculate(GlobalConstants.kLoopPeriodSeconds, setpoint, goalState);
-
-            if (setpoint.position < 0.0 || setpoint.position > kPivotMaximumAngle.get()) {
-                setpoint = new State(MathUtil.clamp(setpoint.position, 0.0, kPivotMaximumAngle.get()), 0.0);
-            }
-
-            pivotAtGoal = EqualsUtility.epsilonEquals(setpoint.position, goalState.position) && EqualsUtility.epsilonEquals(setpoint.velocity, goalState.velocity);
-
-            double accel = (setpoint.velocity - previousVelocity) / GlobalConstants.kLoopPeriodSeconds;
-            io.setPivotPosition(
-                setpoint.position + pivotHomedPosition,
-                kS.get() * Math.signum(setpoint.velocity) + kG.get() * Math.cos(setpoint.position) + kA.get() * accel
-            );
-
-            // Log state
-            Logger.recordOutput("Intake/Pivot/Profile/SetpointPositionRadians", setpoint.position);
-            Logger.recordOutput("Intake/Pivot/Profile/SetpointVelocityRadiansPerSecond", setpoint.velocity);
-            Logger.recordOutput("Intake/Pivot/Profile/GoalPositionRadians", goalState.position);
-            Logger.recordOutput("Intake/Pivot/Profile/GoalVelocityRadiansPerSecond", goalState.velocity);
-        } else {
-            // Reset setpoint
-            setpoint = new State(getPivotMeasuredAngleRadians(), 0.0);
-
-            // Clear logs
-            Logger.recordOutput("Intake/Pivot/Profile/SetpointPositionMeters", 0.0);
-            Logger.recordOutput("Intake/Pivot/Profile/SetpointVelocityRadiansPerSecond", 0.0);
-            Logger.recordOutput("Intake/Pivot/Profile/GoalPositionRadians", 0.0);
-            Logger.recordOutput("Intake/Pivot/Profile/GoalVelocityRadiansPerSecond", 0.0);
-        }
-
-        switch (rollerGoal) {
-            case INTAKE, EXHAUST, IDLE -> rollerVoltage = rollerGoal.getRollerVoltage();
-            case STOP -> rollerVoltage = 0.0;
+        if (DriverStation.isEnabled() && !pivotHomed && !backupHomingSequence().isScheduled()) {
+            CommandScheduler.getInstance().schedule(backupHomingSequence());
         }
         
-        io.setRollerVoltage(rollerVoltage);
+        switch (pivotControlMode) {
+            case COAST -> {
+                io.setPivotVoltage(0.0);
+                setpoint = new State(getPivotMeasuredAngleRadians(), 0.0);
+                pivotAtGoal = false;
+
+                //io.setBrakeMode(true); // TODO: Seperate roller and pivot into their own functions to brake them individually
+            }
+
+            case OPEN_LOOP -> {
+                io.setPivotVoltage(pivotOpenLoopVoltage);
+                setpoint = new State(getPivotMeasuredAngleRadians(), 0.0);
+                pivotAtGoal = false;
+            }
+
+            case CLOSED_LOOP -> {
+                final boolean shouldRunProfile = !stopProfile
+                    && brakeModeEnabled.getAsBoolean()
+                    && (pivotHomed || GlobalConstants.getRobot() == GlobalConstants.RobotType.SIMBOT)
+                    && DriverStation.isEnabled();
+
+                Logger.recordOutput("Intake/Pivot/RunningProfile", shouldRunProfile);
+
+                if (shouldRunProfile) {
+                    var goalState = new State(MathUtil.clamp(pivotGoal.getAngleRadians(), 0.0, kPivotMaximumAngle.get()), 0.0);
+                    double previousVelocity = setpoint.velocity;
+                    setpoint = profile.calculate(GlobalConstants.kLoopPeriodSeconds, setpoint, goalState);
+
+                    if (setpoint.position < 0.0 || setpoint.position > kPivotMaximumAngle.get()) {
+                        setpoint = new State(MathUtil.clamp(setpoint.position, 0.0, kPivotMaximumAngle.get()), 0.0);
+                    }
+
+                    pivotAtGoal = EqualsUtility.epsilonEquals(setpoint.position, goalState.position) && EqualsUtility.epsilonEquals(setpoint.velocity, goalState.velocity);
+
+                    double accel = (setpoint.velocity - previousVelocity) / GlobalConstants.kLoopPeriodSeconds;
+                    io.setPivotPosition(
+                        setpoint.position + pivotHomedPosition,
+                        pivotkS.get() * Math.signum(setpoint.velocity) + pivotkG.get() * Math.cos(setpoint.position) + pivotkA.get() * accel
+                    );
+
+                    Logger.recordOutput("Intake/Pivot/Profile/SetpointPositionRadians", setpoint.position);
+                    Logger.recordOutput("Intake/Pivot/Profile/SetpointVelocityRadiansPerSecond", setpoint.velocity);
+                    Logger.recordOutput("Intake/Pivot/Profile/GoalPositionRadians", goalState.position);
+                    Logger.recordOutput("Intake/Pivot/Profile/GoalVelocityRadiansPerSecond", goalState.velocity);
+                } else {
+                    setpoint = new State(getPivotMeasuredAngleRadians(), 0.0);
+
+                    Logger.recordOutput("Intake/Pivot/Profile/SetpointPositionMeters", 0.0);
+                    Logger.recordOutput("Intake/Pivot/Profile/SetpointVelocityRadiansPerSecond", 0.0);
+                    Logger.recordOutput("Intake/Pivot/Profile/GoalPositionRadians", 0.0);
+                    Logger.recordOutput("Intake/Pivot/Profile/GoalVelocityRadiansPerSecond", 0.0);
+                }
+            }
+        }
+
+        switch (rollerControlMode) {
+            case COAST -> {
+                //io.setBrakeMode(true);
+            }
+
+            case OPEN_LOOP -> {
+                double voltage = switch (rollerGoal) {
+                    case INTAKE, EXHAUST, IDLE -> rollerGoal.getRollerVoltage();
+                    case STOP -> 0.0;
+                };
+
+                io.setRollerVoltage(voltage);
+                Logger.recordOutput("Intake/Roller/ControlMode", "OPEN_LOOP");
+            }
+        }
 
         Logger.recordOutput("Intake/Pivot/MeasuredVelocityRadiansPerSecond", inputs.pivotVelocity);
-        Logger.recordOutput("Intake/Roller/AppliedVoltage", rollerVoltage);
-        Logger.recordOutput("Intake/Roller/WantedVoltage", rollerGoal.getRollerVoltage());
 
         Robot.batteryLogger.reportCurrentUsage(
             "Intake/Pivot",
@@ -247,17 +281,35 @@ public class Intake extends SubsystemBase {
             inputs.rollerMotorConnected ? inputs.rollerSupplyCurrentAmperes : 0.0
         );
 
-        LoggedTracer.record("IntakePeriodicMS");
+        LoggedTracer.record("IntakePeriodic");
     }
 
-    public void setPivotGoal(PivotGoal goal) {
-        if (goal == this.goal) return;
-        this.goal = goal;
+    private void setPivotControlMode(PivotControlMode mode) {
+        if (mode == pivotControlMode) return;
+        if (mode == PivotControlMode.CLOSED_LOOP) setpoint = new State(getPivotMeasuredAngleRadians(), 0.0);
+        
+        pivotControlMode = mode;
+    }
+
+    private void setRollerControlMode(RollerControlMode mode) {
+        rollerControlMode = mode;
+    }
+
+    public void setPivotSetpoint(PivotGoal goal) {
+        if (pivotControlMode == PivotControlMode.CLOSED_LOOP) setPivotControlMode(PivotControlMode.CLOSED_LOOP);
+        if (goal == this.pivotGoal) return;
+
+        this.pivotGoal = goal;
         pivotAtGoal = false;
     }
 
-    public void setRollerGoal(RollerGoal goal) {
-        if(goal == this.rollerGoal) return;
+    public void setPivotOpenLoopVoltage(double voltage) {
+        pivotControlMode = PivotControlMode.OPEN_LOOP;
+        pivotOpenLoopVoltage = voltage;
+    }
+
+    public void setRollerOpenLoopVoltage(RollerGoal goal) {
+        setRollerControlMode(RollerControlMode.OPEN_LOOP);
         this.rollerGoal = goal;
     }
 
@@ -273,7 +325,7 @@ public class Intake extends SubsystemBase {
     }
 
     private Command setPivotGoalCommand(PivotGoal goal) {
-        return Commands.runOnce(() -> setPivotGoal(goal));
+        return Commands.runOnce(() -> setPivotSetpoint(goal));
     }
 
     private Command backupHomingSequence() {
@@ -284,9 +336,8 @@ public class Intake extends SubsystemBase {
             pivotHomingDebouncer.calculate(false);
         }, () -> {
             if (!brakeModeEnabled.getAsBoolean()) return;
-
-            io.setPivotVoltage(kHomingVolts.get());
-            pivotHomed = pivotHomingDebouncer.calculate(Math.abs(inputs.pivotVelocity) <= kHomingVelocityThreshold.get() && Math.abs(inputs.pivotAppliedVoltage) >= kHomingVolts.get() * 0.7);
+            io.setPivotVoltage(kHomingVoltage.get());
+            pivotHomed = pivotHomingDebouncer.calculate(Math.abs(inputs.pivotVelocity) <= kHomingVelocityThreshold.get() && Math.abs(inputs.pivotAppliedVoltage) >= kHomingVoltage.get() * 0.7);
         }).until(() -> pivotHomed).andThen(this::setHome).finallyDo(() -> {
             stopProfile = false;
         }).withName("Intake Homing Sequence");

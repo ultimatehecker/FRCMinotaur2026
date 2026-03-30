@@ -27,13 +27,6 @@ public interface IntakeIO extends SubsystemDataProcessor.IODataRefresher {
         public double pivotAbsoluteEncoderVelocity = 0.0;
     }
 
-    public enum IntakeControlMode {
-        BRAKE,
-        COAST,
-        VOLTAGE_CONTROL,
-        VELOCITY_CONTROLLED
-    }
-
     public default void updateInputs(IntakeIOInputs inputs) {}
 
     public default void setPivotVoltage(double voltage) {}
