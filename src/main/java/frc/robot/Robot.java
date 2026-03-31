@@ -110,9 +110,11 @@ public class Robot extends LoggedRobot {
         break;
     }
 
+    SignalLogger.setPath("/media/sda1/");
+
     LiveWindow.disableAllTelemetry();
-    SignalLogger.enableAutoLogging(false); // might disable later
     Logger.start();
+    SignalLogger.start();
 
     Pathfinding.setPathfinder(new LocalADStarAK());
 

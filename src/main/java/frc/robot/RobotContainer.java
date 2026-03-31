@@ -40,6 +40,10 @@ import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainIOHardware;
 import frc.robot.subsystems.drivetrain.DrivetrainIOSimulation;
 import frc.robot.subsystems.drivetrain.SimulationTunerConstants;
+import frc.robot.subsystems.shooter.flywheel.Shooter;
+import frc.robot.subsystems.shooter.flywheel.ShooterIOHardware;
+import frc.robot.subsystems.shooter.flywheel.ShooterIOSimulation;
+import frc.robot.subsystems.shooter.flywheel.Shooter.ShooterGoal;
 import frc.robot.subsystems.shooter.hood.Hood;
 import frc.robot.subsystems.shooter.hood.HoodIOHardware;
 import frc.robot.subsystems.shooter.hood.HoodIOSimulation;
@@ -53,10 +57,6 @@ import frc.robot.subsystems.intake.IntakeIOHardware;
 import frc.robot.subsystems.intake.IntakeIOSimulation;
 import frc.robot.subsystems.intake.Intake.PivotGoal;
 import frc.robot.subsystems.intake.Intake.RollerGoal;
-import frc.robot.subsystems.shooter.Shooter;
-import frc.robot.subsystems.shooter.Shooter.ShooterGoal;
-import frc.robot.subsystems.shooter.ShooterIOHardware;
-import frc.robot.subsystems.shooter.ShooterIOSimulation;
 import frc.robot.subsystems.tower.Tower;
 import frc.robot.subsystems.tower.TowerIOHardware;
 import frc.robot.subsystems.tower.Tower.TowerGoal;
@@ -72,13 +72,7 @@ public class RobotContainer {
   private final RobotState robotState = new RobotState(visionEstimateConsumer);
   private Drivetrain drivetrain;
   private Intake intake;
-  private Indexer indexer;
-  private Tower tower;
-  private Shooter shooter;
-  private Hood hood;
-  private Agitator agitator;
 
-  //TODO: Check the controller axis inputs and ensure that they align with the assigned values for an Xbox Elite Controller
   private CommandSimulatedXboxController driverController = new CommandSimulatedXboxController(ControllerConstants.kDriverControllerPort);
   private CommandSimulatedXboxController operatorController = new CommandSimulatedXboxController(ControllerConstants.kOperatorControllerPort);
 
@@ -182,30 +176,9 @@ public class RobotContainer {
    return intake;
   }
 
-  public Indexer getIndexer() {
-    return indexer;
-  }
-
-  public Tower getTower() {
-    return tower;
-  }
-
-  public Shooter getShooter() {
-    return shooter;
-  }
-
-  public Hood getHood() {
-    return hood;
-  }
-
   public RobotContainer() {
     drivetrain = buildDrivetrain();
     intake = buildIntake();
-    indexer = buildIndexer();
-    tower = buildTower();
-    shooter = buildShooter();
-    hood = buildHood();
-    agitator = getAgitator();
 
     DriverStation.silenceJoystickConnectionWarning(true);
 
@@ -214,116 +187,7 @@ public class RobotContainer {
     autoRegistry.addOption("Drivetrain Translation Dynamic Reverse", drivetrain.sysIdDynamic(Drivetrain.SysIdMechanism.SWERVE_TRANSLATION, Direction.kReverse));
     autoRegistry.addOption("Drivetrain Translation Quasisatic Forward", drivetrain.sysIdQuasistatic(Drivetrain.SysIdMechanism.SWERVE_TRANSLATION, Direction.kForward));
     autoRegistry.addOption("Drivetrain Translation Quasisatic Reverse", drivetrain.sysIdQuasistatic(Drivetrain.SysIdMechanism.SWERVE_TRANSLATION, Direction.kReverse));
-    
-    NamedCommands.registerCommand("DeployIntake", Commands.runOnce(() -> intake.setPivotGoal(PivotGoal.DEPLOY)));
-    NamedCommands.registerCommand("StartIntakeRoller", Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.INTAKE)));
-    NamedCommands.registerCommand("Hood Minimum Position", Commands.runOnce(() -> hood.setGoal(HoodGoal.MINIMUM)));
-    NamedCommands.registerCommand("Hood Minimum-Midpoint Position", Commands.runOnce(() -> hood.setGoal(HoodGoal.MIDPOINT)));
-    NamedCommands.registerCommand("Hood Midpoint Position", Commands.runOnce(() -> hood.setGoal(HoodGoal.MIDPOINT)));
-    NamedCommands.registerCommand("Hood Maximum Position", Commands.runOnce(() -> hood.setGoal(HoodGoal.MAXIMUM)));
-    NamedCommands.registerCommand(
-      "Shooter Open Loop Close-Mid", 
-      Commands.runOnce(() -> shooter.setGoal(ShooterGoal.VOLTAGE))
-        .andThen(Commands.runOnce(() -> shooter.setManualVoltage(4.3)))
-    );
-    NamedCommands.registerCommand(
-      "Shooter Open Loop Close", 
-      Commands.runOnce(() -> shooter.setGoal(ShooterGoal.VOLTAGE))
-        .andThen(Commands.runOnce(() -> shooter.setManualVoltage(4.5)))
-    );
-    NamedCommands.registerCommand(
-      "Shooter Open Loop Mid", 
-      Commands.runOnce(() -> shooter.setGoal(ShooterGoal.VOLTAGE))
-        .andThen(Commands.runOnce(() -> shooter.setManualVoltage(5.4)))
-    );
-    NamedCommands.registerCommand("Index to Shooter", 
-      Commands.runOnce(() -> {
-        indexer.setGoal(Goal.INTAKE);
-        tower.setGoal(TowerGoal.INTAKE);
-      }));
-
-    new EventTrigger("Shooter Open Loop Close")
-      .onTrue(Commands.runOnce(() -> shooter.setGoal(ShooterGoal.VOLTAGE))
-        .andThen(Commands.runOnce(() -> shooter.setManualVoltage(4.6))));
-
-    NamedCommands.registerCommand("Stop Index to Shooter", 
-    Commands.runOnce(() -> {
-      indexer.setGoal(Goal.STOP); 
-      tower.setGoal(TowerGoal.STOP);
-    }));
-
-    NamedCommands.registerCommand("Stop Intake Rollers", 
-      Commands.runOnce(() -> 
-        intake.setRollerGoal(RollerGoal.STOP))
-    );
-
-    NamedCommands.registerCommand("Idle Shooter", 
-      Commands.runOnce(() -> 
-        shooter.setGoal(ShooterGoal.IDLE))
-    );
-
-    NamedCommands.registerCommand("StopAndRetractIntakeHalf", 
-      Commands.runOnce(() -> 
-          intake.setPivotGoal(PivotGoal.FEED))
-            .alongWith(Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.STOP))));
-
-    new EventTrigger("DeployIntake")
-    .onTrue(Commands.runOnce(() -> intake.setPivotGoal(PivotGoal.DEPLOY)));
-
-    new EventTrigger("Index to Shooter")
-    .onTrue(Commands.runOnce(() -> {
-        indexer.setGoal(Goal.INTAKE);
-        tower.setGoal(TowerGoal.INTAKE);
-      }));
-
-    new EventTrigger("StartIntakeRoller")
-      .onTrue(Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.INTAKE)));
-
-    new EventTrigger("Stop Index to Shooter")
-    .onTrue(Commands.runOnce(() -> {
-      indexer.setGoal(Goal.STOP);
-      tower.setGoal(TowerGoal.STOP);
-    }));
-
-    new EventTrigger("StopAndRetractIntake")
-      .onTrue(
-        Commands.runOnce(() -> 
-          intake.setPivotGoal(PivotGoal.PARKED))
-            .alongWith(Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.STOP)))
-      );
-
-    new EventTrigger("Stop Intake Rollers")
-      .onTrue(
-        Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.STOP))
-      );
-
-    new EventTrigger("Shooter OpenLoop Passing Setpoint")
-      .onTrue(Commands.runOnce(() -> shooter.setManualVoltage(9.5)));
-
-    new EventTrigger("Hood Midpoint Position")
-      .onTrue(
-        Commands.runOnce(() -> hood.setGoal(HoodGoal.MIDPOINT))
-      );
-
-    new EventTrigger("Hood Minimum Position")
-      .onTrue(
-        Commands.runOnce(() -> hood.setGoal(HoodGoal.MINIMUM))
-      );
-
-    new EventTrigger("StopAndRetractIntakeHalf")
-      .onTrue(
-        Commands.runOnce(() -> 
-          intake.setPivotGoal(PivotGoal.FEED))
-            .alongWith(Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.STOP)))
-      );
-
-    NamedCommands.registerCommand("StopAndRetractIntake", Commands.runOnce(() -> intake.setPivotGoal(PivotGoal.PARKED)).alongWith(Commands.runOnce(() -> intake.setRollerGoal(RollerGoal.STOP))));
-
-    autoRegistry = new LoggedDashboardChooser<Command>("Auton Choices", AutoBuilder.buildAutoChooser());
-    autoRegistry.addOption("Drivetrain Translation Dynamic Forward", drivetrain.sysIdDynamic(Drivetrain.SysIdMechanism.SWERVE_TRANSLATION, Direction.kForward));
-    autoRegistry.addOption("Drivetrain Translation Dynamic Reverse", drivetrain.sysIdDynamic(Drivetrain.SysIdMechanism.SWERVE_TRANSLATION, Direction.kReverse));
-    autoRegistry.addOption("Drivetrain Translation Quasisatic Forward", drivetrain.sysIdQuasistatic(Drivetrain.SysIdMechanism.SWERVE_TRANSLATION, Direction.kForward));
-    autoRegistry.addOption("Drivetrain Translation Quasisatic Reverse", drivetrain.sysIdQuasistatic(Drivetrain.SysIdMechanism.SWERVE_TRANSLATION, Direction.kReverse));
+    autoRegistry.addOption("Do Nothing", Commands.none());
     
     configureDefaultCommands();
     configureDriverBindings();
@@ -344,35 +208,31 @@ public class RobotContainer {
   private void configureDriverBindings() {
     driverController
       .leftTrigger()
-      .onTrue(Commands.runOnce(() -> intake.setPivotGoal(PivotGoal.DEPLOY)))
-      .whileTrue(
-        Commands.runEnd(
-          () -> intake.setRollerGoal(RollerGoal.INTAKE), 
-          () -> intake.setRollerGoal(RollerGoal.STOP), 
-          intake
-        )
-      );
-
-    driverController
-      .rightTrigger()
-      .whileTrue(Commands.startEnd(
-        () -> shooter.setGoal(ShooterGoal.VOLTAGE), 
-        () -> shooter.setGoal(ShooterGoal.IDLE), 
-        shooter
+      .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.DEPLOY)))
+      .whileTrue(Commands.runEnd(
+        () -> intake.setRollerOpenLoopVoltage(RollerGoal.INTAKE), 
+        () -> intake.setRollerOpenLoopVoltage(RollerGoal.STOP), 
+        intake
       ));
 
     driverController
       .leftBumper()
-      .onTrue(Commands.runOnce(() -> intake.setPivotGoal(PivotGoal.PARKED)));
-   
-    driverController
+      .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.PARKED)))
+      .onTrue(Commands.runEnd(
+        () -> intake.setRollerOpenLoopVoltage(RollerGoal.INTAKE), 
+        () -> intake.setRollerOpenLoopVoltage(RollerGoal.IDLE), 
+        intake
+      ).withTimeout(1));
+
+      driverController
       .start()
       .onTrue(Commands.runOnce(() -> drivetrain.seedFieldCentric()));
 
       driverController
       .a()
-      .onTrue(Commands.runOnce(() -> intake.setPivotGoal(PivotGoal.FEED)));
+      .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.FEED)));
 
+      /*
       driverController
         .rightBumper()
         .whileTrue(Commands.runEnd(
@@ -404,9 +264,12 @@ public class RobotContainer {
         .onTrue(Commands.runOnce(
           () -> hood.setGoal(HoodGoal.MAXIMUM)
         ));
+
+        */
   }
 
   private void configureOperatorBindings() {
+    /* 
       operatorController
         .a()
         .whileTrue(Commands.runEnd(
@@ -442,26 +305,26 @@ public class RobotContainer {
       operatorController
         .rightTrigger()
         .whileTrue(Commands.runEnd(
-          () -> intake.setRollerGoal(RollerGoal.INTAKE), 
-          () -> intake.setRollerGoal(RollerGoal.STOP), 
+          () -> intake.setRollerOpenLoopVoltage(RollerGoal.INTAKE), 
+          () -> intake.setRollerOpenLoopVoltage(RollerGoal.STOP), 
           intake
         ));
 
       operatorController
         .rightBumper()
         .whileTrue(Commands.runEnd(
-          () -> intake.setRollerGoal(RollerGoal.EXHAUST), 
-          () -> intake.setRollerGoal(RollerGoal.STOP), 
+          () -> intake.setRollerOpenLoopVoltage(RollerGoal.EXHAUST), 
+          () -> intake.setRollerOpenLoopVoltage(RollerGoal.STOP), 
           intake
         ));
 
       operatorController
         .leftBumper()
-        .onTrue(Commands.runOnce(() -> intake.setPivotGoal(PivotGoal.FEED)));
+        .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.FEED)));
 
       operatorController
         .leftTrigger()
-        .onTrue(Commands.runOnce(() -> intake.setPivotGoal(PivotGoal.DEPLOY)));
+        .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.DEPLOY)));
 
       operatorController
         .povDown()
@@ -497,6 +360,8 @@ public class RobotContainer {
             () -> shooter.setGoal(ShooterGoal.IDLE),
             shooter
           ));
+
+          */
   }
 
   public Command getAutonomousCommand() {
