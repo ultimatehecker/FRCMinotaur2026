@@ -78,7 +78,7 @@ public class IntakeConstants {
 
     public static final boolean kRollerMotorInverted = true;
     public static final double kRollerMotorReduction = (24.0 / 12.0);
-    public static final Current kRollerMotorSupplyLimit = Amps.of(35);
+    public static final Current kRollerMotorSupplyLimit = Amps.of(40);
     public static final DCMotor kRollerSimulatedGearbox = DCMotor.getFalcon500(1);
 
     public static final double kRollerVelocityFilterTimeConstant = 0.1;
