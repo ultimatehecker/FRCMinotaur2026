@@ -54,7 +54,7 @@ public class RollerSystemIOHardware implements RollerSystemIO{
 
     private final double reduction;
 
-    public RollerSystemIOHardware(final MinoCANDevice device, int currentLimitAmperes, boolean inverted, boolean brakeEnabled, double reduction) {
+    public RollerSystemIOHardware(final MinoCANDevice device, double currentLimitAmperes, boolean inverted, boolean brakeEnabled, double reduction) {
         this.reduction = reduction;
         motor = new TalonFX(device.deviceNumber, device.CANBus.getParent());
 
@@ -70,6 +70,7 @@ public class RollerSystemIOHardware implements RollerSystemIO{
             ).withFeedback(
                 new FeedbackConfigs()
                     .withVelocityFilterTimeConstant(0.1)
+                    .withSensorToMechanismRatio(reduction)
             );
 
         simpleTryUntilOk(5, () -> motor.getConfigurator().apply(configuration));

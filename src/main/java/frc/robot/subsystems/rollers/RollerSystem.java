@@ -5,6 +5,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.Alert;
 import frc.minolib.advantagekit.LoggedTracer;
+import frc.minolib.utilities.SubsystemDataProcessor;
 import frc.robot.Robot;
 import lombok.Setter;
 
@@ -27,13 +28,21 @@ public class RollerSystem {
         this.inputsName = inputsName;
         this.io = io;
 
-        disconnected = new Alert(name + " motor disconnected!", Alert.AlertType.kError);
-        temperatureFault = new Alert(name + " motor is overheating! 🥵", Alert.AlertType.kWarning);
+        SubsystemDataProcessor.createAndStartSubsystemDataProcessor(() -> {
+            synchronized (inputs) {
+                io.updateInputs(inputs);
+            }
+        },
+        io);
+
+        disconnected = new Alert("The " + name.toLowerCase() + " motor disconnected!", Alert.AlertType.kError);
+        temperatureFault = new Alert("The " + name.toLowerCase() + " motor is overheating!", Alert.AlertType.kWarning);
     }
 
     public void periodic() {
-        io.updateInputs(inputs);
-        Logger.processInputs(inputsName, inputs);
+        synchronized (inputs) {
+            Logger.processInputs(inputsName, inputs);
+        }
         
         disconnected.set(!motorConnectedDebouncer.calculate(inputs.isMotorConnected) && !Robot.isJITing());
         temperatureFault.set(inputs.temperatureFault);
