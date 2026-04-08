@@ -64,7 +64,7 @@ public class SlamIOSimulation implements SlamIO {
             IntakeConstants.kPivotMotorReduction,
             IntakeConstants.kPivotMOI.in(KilogramSquareMeters),
             IntakeConstants.kIntakeLength.in(Meters),
-            IntakeConstants.kIntakeMinimumPosition.in(Radians) - 2,
+            IntakeConstants.kIntakeMinimumPosition.in(Radians),
             IntakeConstants.kIntakeMaximumPosition.in(Radians),
             true, 
             IntakeConstants.kIntakeStartingPosition.in(Radians)

@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Celsius;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.minolib.phoenix.PhoenixUtility.simpleTryUntilOk;
 
@@ -34,7 +35,6 @@ import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.IntakeConstants;
-import frc.robot.subsystems.intake.Intake.SlamGoal;
 
 public class SlamIOHardware implements SlamIO {
     private final TalonFX motor;
@@ -91,7 +91,7 @@ public class SlamIOHardware implements SlamIO {
             );
 
         simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.25));
-        simpleTryUntilOk(5, () -> motor.setPosition(SlamGoal.RETRACT.getPositionRadians()));
+        simpleTryUntilOk(5, () -> motor.setPosition(IntakeConstants.kIntakeMinimumPosition.in(Rotations)));
 
         position = motor.getPosition();
         velocity = motor.getVelocity();

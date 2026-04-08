@@ -5,6 +5,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj.Alert;
 import frc.minolib.advantagekit.LoggedTracer;
+import frc.minolib.advantagekit.LoggedTunableNumber;
 import frc.minolib.utilities.SubsystemDataProcessor;
 import frc.robot.Robot;
 import lombok.Setter;
@@ -12,6 +13,21 @@ import lombok.Setter;
 public class RollerSystem {
     private final String name;
     private final String inputsName;
+
+    public enum Goal {
+        IDLE,
+        VOLTAGE,
+        VELOCITY,
+        REVERSE
+    }
+
+    public enum State {
+        IDLE,
+        RUNNING_VOLTS,
+        SPINNING_UP,
+        AT_VELOCITY,
+        REVERSING
+    }
 
     private final RollerSystemIO io;
     protected final RollerSystemIOInputsAutoLogged inputs = new RollerSystemIOInputsAutoLogged();
