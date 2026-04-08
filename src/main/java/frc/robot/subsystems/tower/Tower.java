@@ -15,26 +15,27 @@ import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.TowerConstants;
+import frc.robot.subsystems.rollers.RollerSystem;
+import frc.robot.subsystems.rollers.RollerSystemIO;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
 public class Tower extends SubsystemBase {
-    private static final LoggedTunableNumber topRollerKp = new LoggedTunableNumber("Tower/topRollerKp");
-    private static final LoggedTunableNumber topRollerKd = new LoggedTunableNumber("Tower/topRollerKd");
-    private static final LoggedTunableNumber topRollerKs = new LoggedTunableNumber("Tower/topRollerKs");
-    private static final LoggedTunableNumber topRollerKv = new LoggedTunableNumber("Tower/topRollerKv");
-    private static final LoggedTunableNumber topRollerKa = new LoggedTunableNumber("Tower/topRollerKa");
+    private static final LoggedTunableNumber topkP = new LoggedTunableNumber("Tower/Top/kP");
+    private static final LoggedTunableNumber topkD = new LoggedTunableNumber("Tower/Top/kD");
+    private static final LoggedTunableNumber topkS = new LoggedTunableNumber("Tower/Top/kS");
+    private static final LoggedTunableNumber topkV = new LoggedTunableNumber("Tower/Top/kV");
 
-    private static final LoggedTunableNumber bottomRollerKp = new LoggedTunableNumber("Tower/topRollerKp");
-    private static final LoggedTunableNumber bottomRollerKd = new LoggedTunableNumber("Tower/topRollerKd");
-    private static final LoggedTunableNumber bottomRollerKs = new LoggedTunableNumber("Tower/topRollerKs");
-    private static final LoggedTunableNumber bottomRollerKv = new LoggedTunableNumber("Tower/topRollerKv");
-    private static final LoggedTunableNumber bottomRollerKa = new LoggedTunableNumber("Tower/topRollerKa");
+    private static final LoggedTunableNumber bottomkP = new LoggedTunableNumber("Tower/Bottom/kP");
+    private static final LoggedTunableNumber bottomkD = new LoggedTunableNumber("Tower/Bottom/kD");
+    private static final LoggedTunableNumber bottomkS = new LoggedTunableNumber("Tower/Bottom/kS");
+    private static final LoggedTunableNumber bottomkV = new LoggedTunableNumber("Tower/Bottom/kV");
 
     @RequiredArgsConstructor
     public enum TowerGoal {
-        INTAKE(new LoggedTunableNumber("Tower/IntakeVoltage", 12.0)),
+        FEED(new LoggedTunableNumber("Tower/FeedVoltage", 12.0)),
         EXHAUST(new LoggedTunableNumber("Tower/ExhaustVoltage", -6.0)),
         STOP(new LoggedTunableNumber("Tower/StopVoltage", 0.0));
 
@@ -48,85 +49,55 @@ public class Tower extends SubsystemBase {
     static {
         switch (GlobalConstants.getRobot()) {
             default -> {
-                topRollerKp.initDefault(TowerConstants.topRollerkP);
-                topRollerKd.initDefault(TowerConstants.topRollerkD);
-                topRollerKs.initDefault(TowerConstants.topRollerkS);
-                topRollerKv.initDefault(TowerConstants.topRollerkV);
-                topRollerKa.initDefault(TowerConstants.topRollerkA);
+                topkP.initDefault(TowerConstants.topkP);
+                topkD.initDefault(TowerConstants.topkD);
+                topkS.initDefault(TowerConstants.topkS);
+                topkV.initDefault(TowerConstants.topkV);
 
-                bottomRollerKp.initDefault(TowerConstants.bottomRollerkP);
-                bottomRollerKd.initDefault(TowerConstants.bottomRollerkD);
-                bottomRollerKs.initDefault(TowerConstants.bottomRollerkS);
-                bottomRollerKv.initDefault(TowerConstants.bottomRollerkV);
-                bottomRollerKa.initDefault(TowerConstants.bottomRollerkA);
+                bottomkP.initDefault(TowerConstants.bottomkP);
+                bottomkD.initDefault(TowerConstants.bottomkD);
+                bottomkS.initDefault(TowerConstants.bottomkS);
+                bottomkV.initDefault(TowerConstants.bottomkV);
             }
             case SIMBOT -> {
-                topRollerKp.initDefault(TowerConstants.topRollerkP);
-                topRollerKd.initDefault(TowerConstants.topRollerkD);
-                topRollerKs.initDefault(TowerConstants.topRollerkS);
-                topRollerKv.initDefault(TowerConstants.topRollerkV);
-                topRollerKa.initDefault(TowerConstants.topRollerkA);
+                topkP.initDefault(0.0);
+                topkD.initDefault(0.0);
+                topkS.initDefault(0.0);
+                topkV.initDefault(0.0);
 
-                bottomRollerKp.initDefault(TowerConstants.simulatedBottomRollerkP);
-                bottomRollerKd.initDefault(TowerConstants.simulatedBottomRollerkD);
-                bottomRollerKs.initDefault(TowerConstants.simulatedBottomRollerkS);
-                bottomRollerKv.initDefault(TowerConstants.simulatedBottomRollerkV);
-                bottomRollerKa.initDefault(TowerConstants.simulatedBottomRollerkA);
+                bottomkP.initDefault(0.0);
+                bottomkD.initDefault(0.0);
+                bottomkS.initDefault(0.0);
+                bottomkV.initDefault(0.0);
             }
         }
     }
 
-    private final TowerIO io;
-    private final TowerIOInputsAutoLogged inputs = new TowerIOInputsAutoLogged();
+    private final RollerSystem topRoller;
+    private final RollerSystem bottomRoller;
 
-    private final Debouncer towerMotorConnectedDebouncer = new Debouncer(0.5, Debouncer.DebounceType.kFalling);
-    private final Alert towerMotorDisconnectedAlert = new Alert("Intake pivot motor disconnected!", AlertType.kError);
+    @Getter @Setter @AutoLogOutput private TowerGoal towerGoal = TowerGoal.STOP;
 
-    @AutoLogOutput(key = "Tower/BrakeModeEnabled")
-    private BooleanSupplier brakeModeEnabled = () -> false;
-
-    @Getter 
-    private TowerGoal goal = TowerGoal.STOP;
-    private double appliedVoltage = 0.0;
-
-    public Tower(TowerIO io) {
-        this.io = io;
+    public Tower(final RollerSystemIO topRollerIO, final RollerSystemIO bottomRollerIO) {
+        topRoller = new RollerSystem("Tower Top Roller", "Tower/TopRoller", topRollerIO);
+        bottomRoller = new RollerSystem("Tower Bottom Roller", "Tower/BottomRoller", bottomRollerIO);
     }
 
     @Override
     public void periodic() {
-        Logger.processInputs("Tower", inputs);
+        topRoller.periodic();
+        bottomRoller.periodic();
     
-        switch (goal) {
-            case INTAKE, EXHAUST -> appliedVoltage = goal.getVoltage();
+        double appliedVoltage = 0.0;
+
+        switch (towerGoal) {
+            case FEED, EXHAUST -> appliedVoltage = towerGoal.getVoltage();
             case STOP -> appliedVoltage = 0.0;
         }
         
-        io.setTopRollerVoltage(appliedVoltage);
-        io.setBottomRollerVoltage(appliedVoltage);
+        topRoller.setVoltage(appliedVoltage);
+        bottomRoller.setVoltage(appliedVoltage);
 
-        Logger.recordOutput("Tower/AppliedVoltage", appliedVoltage);
-        Logger.recordOutput("Tower/WantedVoltage", goal.getVoltage());
-
-        LoggedTracer.record("TowerPeriodicMS");
-    }
-
-    public void setGoal(TowerGoal goal) {
-        if(goal == this.goal) return;
-        this.goal = goal;
-    }
-
-    public void setBrakeMode(BooleanSupplier enabled) {
-        if (this.brakeModeEnabled.getAsBoolean() == enabled.getAsBoolean()) return;
-        this.brakeModeEnabled = enabled;
-        io.setBrakeMode(brakeModeEnabled.getAsBoolean());
-    }
-
-    public double getTopRollerVelocity() {
-        return inputs.topRollerVelocity;
-    }
-
-    public double getBottomRollerVelocity() {
-        return inputs.topRollerVelocity;
+        LoggedTracer.record("TowerPeriodic");
     }
 }
