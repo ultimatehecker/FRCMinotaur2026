@@ -2,6 +2,7 @@ package frc.robot.io;
 
 import com.google.flatbuffers.Constants;
 
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -53,6 +54,26 @@ public class DriverController implements DriverControllerIO {
     @Override
     public Trigger resetGyro() {
         return controller.back().and(controller.start().negate());
+    }
+
+    @Override
+    public Trigger deployIntake() {
+        return controller.leftTrigger();
+    }
+
+    @Override
+    public Trigger retractIntake() {
+        return controller.leftBumper();
+    }
+
+    @Override
+    public Trigger automaticallyShoot() {
+        return controller.rightTrigger();
+    }
+
+    @Override
+    public XboxController getPrimaryHID() {
+        return controller.getHID();
     }
 
     @Override
