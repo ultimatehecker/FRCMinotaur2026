@@ -87,8 +87,8 @@ public class MinoPigeon2 implements AutoCloseable {
   }
 
   public MinoPigeon2(final MinoCANDevice device, final MinoPigeon2Configuration configuration) {
-    name = "Pigeon2 " + device.deviceNumber;
-    pigeon = new Pigeon2(device.deviceNumber, device.CANBus.getParent());
+    name = "Pigeon2 " + device.getDeviceID();
+    pigeon = new Pigeon2(device.getDeviceID(), device.getCANBus());
     simulationState = pigeon.getSimState();
 
     faultFieldSignal = new MinoStatusSignal<>(pigeon.getFaultField());

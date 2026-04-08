@@ -4,16 +4,22 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 import org.dyn4j.geometry.Rotation;
+import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -24,6 +30,9 @@ import frc.robot.constants.DrivetrainConstants;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 
 public class DrivetrainFactory {
+    private static final PIDController driveToPointController = new PIDController(3.6, 0, 0.3);
+    private static final PIDController rotationController = new PIDController(1, 0, 0.1)
+    ;
     public static Command handleTeleopDrive(Drivetrain drivetrain, RobotState robotState, DoubleSupplier throttleSupplier, DoubleSupplier strafeSupplier, DoubleSupplier rotationSupplier, boolean isFieldCentric) {
         return Commands.run(() -> {
             ChassisSpeeds speeds = calculateSpeedsBasedOnJoystickInputs(drivetrain, robotState, throttleSupplier, strafeSupplier, rotationSupplier);
@@ -46,6 +55,67 @@ public class DrivetrainFactory {
                 );
             }
         }, drivetrain);
+    }
+
+    public static Command driveToPoint(Drivetrain drivetrain, RobotState robotState, Supplier<Pose2d> targetPose, double constraintedMaximumLinearVelocity, double constraintedMaximumAngularVelocity) {
+        rotationController.enableContinuousInput(-Math.PI, Math.PI);
+        
+        return Commands.run(() -> {
+            Translation2d translationToDesiredPoint = targetPose.get().getTranslation().minus(robotState.getLatestFieldToRobot().getValue().getTranslation());
+            double linearDistance = translationToDesiredPoint.getNorm();
+            double frictionConstant = 0.0;
+
+            if (linearDistance >= Units.inchesToMeters(0.5)) {
+                frictionConstant = 0.02 * DrivetrainConstants.kMaximumLinearVelocity.in(MetersPerSecond);
+            }
+
+            Rotation2d directionOfTravel = translationToDesiredPoint.getAngle();
+            double velocityOutput = 0.0;
+
+            double currentHeading = robotState.getLatestFieldToRobot().getValue().getRotation().getRadians();
+            double targetHeading = targetPose.get().getRotation().getRadians();
+
+            double angularVelocity = rotationController.calculate(currentHeading, targetHeading);
+
+            velocityOutput = Math.min(
+                Math.abs(driveToPointController.calculate(linearDistance, 0)) + frictionConstant,
+                constraintedMaximumLinearVelocity
+            );
+
+            double xComponent = velocityOutput * directionOfTravel.getCos();
+            double yComponent = velocityOutput * directionOfTravel.getSin();
+
+            Logger.recordOutput("Drivetrain/DriveToPoint/VelocitySetpointX", xComponent);
+            Logger.recordOutput("Drivetrain/DriveToPoint/VelocitySetpointY", yComponent);
+            Logger.recordOutput("Drivetrain/DriveToPoint/VelocityOutput", velocityOutput);
+            Logger.recordOutput("Drivetrain/DriveToPoint/LinearDistance", linearDistance);
+            Logger.recordOutput("Drivetrain/DriveToPoint/DirectionOfTravel", directionOfTravel);
+            Logger.recordOutput("Drivetrain/DriveToPoint/DesiredPoint", targetPose.get());
+            Logger.recordOutput("Drivetrain/DriveToPoint/DesiredHeading", targetHeading);
+            Logger.recordOutput("Drivetrain/DriveToPoint/CurrentHeading", currentHeading);
+
+            if (Double.isNaN(constraintedMaximumAngularVelocity)) {
+                drivetrain.setControl(new SwerveRequest.FieldCentric()
+                    .withVelocityX(xComponent)
+                    .withVelocityY(yComponent)
+                    .withRotationalRate(angularVelocity)
+                    .withDriveRequestType(DriveRequestType.Velocity)
+                    .withSteerRequestType(SteerRequestType.MotionMagicExpo)
+                );
+            } else {
+                angularVelocity = MathUtil.clamp(angularVelocity, -constraintedMaximumAngularVelocity, constraintedMaximumAngularVelocity);
+
+                drivetrain.setControl(new SwerveRequest.FieldCentric()
+                    .withVelocityX(xComponent) 
+                    .withVelocityY(yComponent)
+                    .withRotationalRate(angularVelocity)
+                    .withDriveRequestType(DriveRequestType.Velocity)
+                    .withSteerRequestType(SteerRequestType.MotionMagicExpo)
+                );
+            }
+        }, drivetrain)
+            .until(() -> MathUtil.isNear(0.0, targetPose.get().getTranslation().getNorm() - robotState.getLatestFieldToRobot().getValue().getTranslation().getNorm(), Units.inchesToMeters(1)))
+            .withName("StationaryDriveToPoint");
     }
 
     private static ChassisSpeeds calculateSpeedsBasedOnJoystickInputs(Drivetrain drivetrain, RobotState robotState, DoubleSupplier throttleSuppler, DoubleSupplier strafeSupplier, DoubleSupplier rotationSupplier) {

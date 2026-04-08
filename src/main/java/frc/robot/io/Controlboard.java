@@ -52,8 +52,8 @@ public class Controlboard implements DriverControllerIO, OperatorControllerIO {
     }
 
     @Override
-    public Trigger retractIntake() {
-        return driverController.retractIntake();
+    public Trigger stowIntake() {
+        return driverController.stowIntake();
     }
 
     @Override

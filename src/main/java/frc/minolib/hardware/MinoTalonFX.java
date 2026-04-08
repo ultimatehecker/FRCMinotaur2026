@@ -236,8 +236,8 @@ public class MinoTalonFX implements AutoCloseable {
     }
 
     public MinoTalonFX(final MinoCANDevice device, final MechanismRatio gearRatio, final MinoTalonFXConfiguration configuration) {
-        name = "TalonFX " + device.deviceNumber;
-        controller = new TalonFX(device.deviceNumber, device.CANBus.getParent());
+        name = "TalonFX " + device.getDeviceID();
+        controller = new TalonFX(device.getDeviceID(), device.getCANBus());
         simulationState = controller.getSimState();
         this.gearRatio = gearRatio;
         this.configuration = configuration;

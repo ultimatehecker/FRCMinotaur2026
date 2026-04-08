@@ -74,8 +74,8 @@ public class MinoCANCoder implements AutoCloseable {
     }
 
     public MinoCANCoder(final MinoCANDevice canDevice, final MechanismRatio gearRatio, final MinoCANCoderConfiguration configuration) {
-        this.name = "CANCoder " + canDevice.deviceNumber;
-        this.cancoder = new CANcoder(canDevice.deviceNumber, canDevice.CANBus.getParent());
+        this.name = "CANCoder " + canDevice.getDeviceID();
+        this.cancoder = new CANcoder(canDevice.getDeviceID(), canDevice.getCANBus());
         this.simulationState = cancoder.getSimState();
         this.gearRatio = gearRatio;
   

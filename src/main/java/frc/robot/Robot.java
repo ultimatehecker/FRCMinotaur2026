@@ -16,7 +16,6 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-import org.littletonrobotics.urcl.URCL;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.google.flatbuffers.Constants;
@@ -144,7 +143,7 @@ public class Robot extends LoggedRobot {
     disabledTimer.restart();
 
     // Configure brownout voltage
-    RobotController.setBrownoutVoltage(6.0);
+    RobotController.setBrownoutVoltage(6.2);
     robotContainer = new RobotContainer();
 
     canivoreBus = GlobalConstants.kCANivoreBus;
@@ -214,6 +213,8 @@ public class Robot extends LoggedRobot {
     if (DriverStation.isEnabled()) {
       disabledTimer.reset();
     }
+
+    robotContainer.updateOnboardAlerts();
 
     // JIT alert
     jitAlert.set(isJITing());

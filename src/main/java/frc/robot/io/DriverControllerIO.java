@@ -16,7 +16,7 @@ public interface DriverControllerIO {
 
     public Trigger deployIntake();
 
-    public Trigger retractIntake();
+    public Trigger stowIntake();
 
     public Trigger automaticallyShoot();
 

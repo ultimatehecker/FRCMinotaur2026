@@ -62,7 +62,7 @@ public class DriverController implements DriverControllerIO {
     }
 
     @Override
-    public Trigger retractIntake() {
+    public Trigger stowIntake() {
         return controller.leftBumper();
     }
 

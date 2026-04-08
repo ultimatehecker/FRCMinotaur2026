@@ -4,62 +4,61 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.function.Consumer;
+import java.util.zip.ZipEntry;
 
-import org.dyn4j.collision.narrowphase.FallbackCondition;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.auto.NamedCommands;
-import com.pathplanner.lib.events.EventTrigger;
 
-import choreo.trajectory.EventMarker;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.wpilibj.Alert;
+import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
-import frc.minolib.controller.CommandSimulatedXboxController;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.robot.command_factories.DrivetrainFactory;
 import frc.robot.command_factories.IntakeFactory;
-import frc.robot.constants.ControllerConstants;
 import frc.robot.constants.DrivetrainConstants;
+import frc.robot.constants.IndexerConstants;
 import frc.robot.constants.IntakeConstants;
-import frc.robot.subsystems.agitator.Agitator;
-import frc.robot.subsystems.agitator.AgitatorIOHardware;
-import frc.robot.subsystems.agitator.Agitator.AgitatorGoal;
+import frc.robot.constants.TowerConstants;
+import frc.robot.constants.VisionConstants;
+import frc.robot.io.Controlboard;
 import frc.robot.subsystems.drivetrain.CompetitionTunerConstants;
 import frc.robot.subsystems.drivetrain.Drivetrain;
 import frc.robot.subsystems.drivetrain.DrivetrainIOHardware;
 import frc.robot.subsystems.drivetrain.DrivetrainIOSimulation;
 import frc.robot.subsystems.drivetrain.SimulationTunerConstants;
+import frc.robot.subsystems.elevator.Elevator;
+import frc.robot.subsystems.elevator.ElevatorIOHardware;
+import frc.robot.subsystems.rollers.RollerSystemIOSimulation;
+import frc.robot.subsystems.rollers.RollerSystemIOHardware;
 import frc.robot.subsystems.shooter.flywheel.Shooter;
 import frc.robot.subsystems.shooter.flywheel.ShooterIOHardware;
 import frc.robot.subsystems.shooter.flywheel.ShooterIOSimulation;
-import frc.robot.subsystems.shooter.flywheel.Shooter.ShooterGoal;
 import frc.robot.subsystems.shooter.hood.Hood;
 import frc.robot.subsystems.shooter.hood.HoodIOHardware;
 import frc.robot.subsystems.shooter.hood.HoodIOSimulation;
 import frc.robot.subsystems.shooter.hood.Hood.HoodGoal;
 import frc.robot.subsystems.indexer.Indexer;
-import frc.robot.subsystems.indexer.IndexerIOCTRE;
-import frc.robot.subsystems.indexer.IndexerIOHardware;
-import frc.robot.subsystems.indexer.Indexer.Goal;
+import frc.robot.subsystems.indexer.Indexer.IndexerGoal;
 import frc.robot.subsystems.intake.Intake;
-import frc.robot.subsystems.intake.IntakeIOHardware;
-import frc.robot.subsystems.intake.IntakeIOSimulation;
-import frc.robot.subsystems.intake.Intake.PivotGoal;
-import frc.robot.subsystems.intake.Intake.RollerGoal;
+import frc.robot.subsystems.intake.slam.SlamIOSimulation;
+import frc.robot.subsystems.intake.slam.SlamIOHardware;
 import frc.robot.subsystems.tower.Tower;
-import frc.robot.subsystems.tower.TowerIOHardware;
 import frc.robot.subsystems.tower.Tower.TowerGoal;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionIOPhotonVision;
+import frc.robot.subsystems.vision.VisionIOSimulation;
 
 public class RobotContainer {
   private final Consumer<WeightedPoseEstimate> visionEstimateConsumer = new Consumer<WeightedPoseEstimate>() {
@@ -72,13 +71,18 @@ public class RobotContainer {
   private final RobotState robotState = new RobotState(visionEstimateConsumer);
   private Drivetrain drivetrain;
   private Intake intake;
+  private Indexer indexer;
+  private Tower tower;
+  private Shooter shooter;
+  private Hood hood;
+  private Elevator elevator;
 
-  private CommandSimulatedXboxController driverController = new CommandSimulatedXboxController(ControllerConstants.kDriverControllerPort);
-  private CommandSimulatedXboxController operatorController = new CommandSimulatedXboxController(ControllerConstants.kOperatorControllerPort);
-
+  private Controlboard controlboard = Controlboard.getInstance();
   private final LoggedDashboardChooser<Command> autoRegistry;
 
-  private ShooterGoal selectedShooterRPM = ShooterGoal.STOP;
+  private final Alert primaryDisconnected = new Alert("Primary controller disconnected (port 0).", AlertType.kWarning);
+  private final Alert secondaryDisconnected = new Alert("Secondary controller disconnected (port 1).", AlertType.kWarning);
+  private final Alert overrideDisconnected = new Alert("Override controller disconnected (port 5).", AlertType.kInfo);
 
   private Drivetrain buildDrivetrain() {
     if(Robot.isSimulation()) {
@@ -97,13 +101,14 @@ public class RobotContainer {
   private Intake buildIntake() {
    if(Robot.isSimulation()) {
      return new Intake(
-       new IntakeIOSimulation()
+       new SlamIOSimulation(),
+       new RollerSystemIOSimulation()
         //robotState
      );
    } else {
      return new Intake(
-       new IntakeIOHardware()
-        //robotState
+      new SlamIOHardware(),
+      new RollerSystemIOHardware(IntakeConstants.kRollerMotor, IntakeConstants.kRollerMotorSupplyLimit.in(Amps), IntakeConstants.kRollerMotorInverted, true, IntakeConstants.kRollerMotorReduction)
      );
    }
   }
@@ -111,11 +116,13 @@ public class RobotContainer {
   private Indexer buildIndexer() {
     if(Robot.isSimulation()) {
       return new Indexer(
-        new IndexerIOHardware()
+        new RollerSystemIOSimulation(),
+        new RollerSystemIOSimulation()
       );
     } else {
       return new Indexer( 
-        new IndexerIOCTRE()
+        new RollerSystemIOHardware(IndexerConstants.kLeftMotor, IndexerConstants.kMotorSupplyLimit.in(Amps), false, true, IndexerConstants.kRollerReduction),
+        new RollerSystemIOHardware(IndexerConstants.kRightMotor, IndexerConstants.kMotorSupplyLimit.in(Amps), true, true, IndexerConstants.kRollerReduction)
       );
     }
   }
@@ -123,11 +130,13 @@ public class RobotContainer {
   private Tower buildTower() {
     if(Robot.isSimulation()) {
       return new Tower(
-        new TowerIOHardware()
+        new RollerSystemIOSimulation(),
+        new RollerSystemIOSimulation()
       );
     } else {
       return new Tower(
-        new TowerIOHardware()
+        new RollerSystemIOHardware(TowerConstants.kTopMotor, TowerConstants.kTopRollerSupplyLimit.in(Amps), true, true, TowerConstants.kTopMotorReduction),
+        new RollerSystemIOHardware(TowerConstants.kBottomMotor, TowerConstants.kBottomRollerSupplyLimit.in(Amps), true, false, TowerConstants.kBottomMotorReduction)
       );
     }
   }
@@ -156,14 +165,28 @@ public class RobotContainer {
     }
   }
 
-  private Agitator getAgitator() {
+  private Elevator buildElevator() {
     if(Robot.isSimulation()) {
-      return new Agitator(
-        new AgitatorIOHardware()
+      return new Elevator(
+        new ElevatorIOHardware()
       );
     } else {
-      return new Agitator(
-        new AgitatorIOHardware()
+      return new Elevator(
+        new ElevatorIOHardware()
+      );
+    }
+  }
+
+  private Vision buildVision() {
+    if(Robot.isSimulation()) {
+      return new Vision(
+        robotState,
+        new VisionIOSimulation(VisionConstants.kBackLeftConfiguration, VisionConstants.kAprilTagLayout, robotState)
+      );
+    } else {
+      return new Vision(
+        robotState,
+        new VisionIOPhotonVision(VisionConstants.kBackLeftConfiguration, VisionConstants.kAprilTagLayout)
       );
     }
   }
@@ -179,8 +202,11 @@ public class RobotContainer {
   public RobotContainer() {
     drivetrain = buildDrivetrain();
     intake = buildIntake();
-
-    DriverStation.silenceJoystickConnectionWarning(true);
+    indexer = buildIndexer();
+    tower = buildTower();
+    shooter = buildShooter();
+    hood = buildHood();
+    elevator = buildElevator();
 
     autoRegistry = new LoggedDashboardChooser<Command>("Auton Choices", AutoBuilder.buildAutoChooser());
     autoRegistry.addOption("Drivetrain Translation Dynamic Forward", drivetrain.sysIdDynamic(Drivetrain.SysIdMechanism.SWERVE_TRANSLATION, Direction.kForward));
@@ -198,172 +224,64 @@ public class RobotContainer {
     drivetrain.setDefaultCommand(DrivetrainFactory.handleTeleopDrive(
       drivetrain, 
       robotState, 
-      () -> -driverController.getLeftY(), 
-      () -> -driverController.getLeftX(), 
-      () -> -driverController.getRightX(), 
+      () -> controlboard.getThrottle(), 
+      () -> controlboard.getStrafe(), 
+      () -> controlboard.getRotation(), 
       true
     ));
   }
 
   private void configureDriverBindings() {
-    driverController
-      .leftTrigger()
-      .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.DEPLOY)))
-      .whileTrue(Commands.runEnd(
-        () -> intake.setRollerOpenLoopVoltage(RollerGoal.INTAKE), 
-        () -> intake.setRollerOpenLoopVoltage(RollerGoal.STOP), 
-        intake
-      ));
-
-    driverController
-      .leftBumper()
-      .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.PARKED)))
-      .onTrue(Commands.runEnd(
-        () -> intake.setRollerOpenLoopVoltage(RollerGoal.INTAKE), 
-        () -> intake.setRollerOpenLoopVoltage(RollerGoal.IDLE), 
-        intake
-      ).withTimeout(1));
-
-      driverController
-      .start()
+    controlboard
+      .resetGyro()
       .onTrue(Commands.runOnce(() -> drivetrain.seedFieldCentric()));
 
-      driverController
-      .a()
-      .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.FEED)));
+    controlboard
+      .deployIntake()
+      .whileTrue(IntakeFactory.intakeCommand(this))
+      .onFalse(IntakeFactory.deployHalfCommand(this));
 
-      /*
-      driverController
-        .rightBumper()
-        .whileTrue(Commands.runEnd(
-          () -> {
-            indexer.setGoal(Goal.INTAKE);
-            tower.setGoal(TowerGoal.INTAKE);
-            agitator.setGoal(AgitatorGoal.FEED);
-          }, 
-          () -> {
-            indexer.setGoal(Goal.STOP);
-            tower.setGoal(TowerGoal.STOP);
-            agitator.setGoal(AgitatorGoal.STOP);
-          }, 
-          indexer, tower, agitator
-        ));
+    controlboard
+      .stowIntake()
+      .whileTrue(IntakeFactory.stowCommand(this));
 
-      driverController
-        .povLeft()
-        .onTrue(Commands.runOnce(
-          () -> hood.setGoal(HoodGoal.MINIMUM)
-        ));
+    controlboard.automaticallyShoot()
+      .whileTrue(
+        Commands.parallel(
+          Commands.sequence(
+            Commands.waitSeconds(0.75),
+            Commands.runEnd(
+              () -> tower.setTowerGoal(TowerGoal.FEED), 
+              () -> tower.setTowerGoal(TowerGoal.STOP), 
+              tower
+            )
+          ),
+          Commands.runEnd(
+            () -> shooter.runVelocity(2500), 
+            () -> shooter.stop(),
+            shooter
+          ),
+          Commands.runEnd(
+              () -> indexer.setGoal(IndexerGoal.FEED), 
+              () -> indexer.setGoal(IndexerGoal.STOP), 
+              indexer
+          ),
+          Commands.runEnd(
+            () -> hood.setAngle(20), 
+            () -> hood.setAngle(10), 
+            hood
+          )
+        )
+      );
+  }
 
-      driverController
-        .povUp()
-        .onTrue(Commands.runOnce(
-          () -> hood.setGoal(HoodGoal.MIDPOINT)
-        ));
-
-      driverController
-        .povRight()
-        .onTrue(Commands.runOnce(
-          () -> hood.setGoal(HoodGoal.MAXIMUM)
-        ));
-
-        */
+  public void updateOnboardAlerts() {
+    primaryDisconnected.set(!DriverStation.isJoystickConnected(controlboard.getPrimaryHID().getPort()));
+    secondaryDisconnected.set(!DriverStation.isJoystickConnected(controlboard.getSecondaryHID().getPort()));
   }
 
   private void configureOperatorBindings() {
-    /* 
-      operatorController
-        .a()
-        .whileTrue(Commands.runEnd(
-          () -> indexer.setGoal(Goal.INTAKE), 
-          () -> indexer.setGoal(Goal.STOP), 
-          indexer
-        ));
-
-      operatorController
-        .b()
-        .whileTrue(Commands.runEnd(
-          () -> indexer.setGoal(Goal.EXHAUST), 
-          () -> indexer.setGoal(Goal.STOP), 
-          indexer
-        ));
-
-        operatorController
-        .x()
-        .whileTrue(Commands.runEnd(
-          () -> tower.setGoal(TowerGoal.INTAKE), 
-          () -> tower.setGoal(TowerGoal.STOP), 
-          tower
-        ));
-
-      operatorController
-        .y()
-        .whileTrue(Commands.runEnd(
-          () -> tower.setGoal(TowerGoal.EXHAUST), 
-          () -> tower.setGoal(TowerGoal.STOP), 
-          tower
-        ));
-
-      operatorController
-        .rightTrigger()
-        .whileTrue(Commands.runEnd(
-          () -> intake.setRollerOpenLoopVoltage(RollerGoal.INTAKE), 
-          () -> intake.setRollerOpenLoopVoltage(RollerGoal.STOP), 
-          intake
-        ));
-
-      operatorController
-        .rightBumper()
-        .whileTrue(Commands.runEnd(
-          () -> intake.setRollerOpenLoopVoltage(RollerGoal.EXHAUST), 
-          () -> intake.setRollerOpenLoopVoltage(RollerGoal.STOP), 
-          intake
-        ));
-
-      operatorController
-        .leftBumper()
-        .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.FEED)));
-
-      operatorController
-        .leftTrigger()
-        .onTrue(Commands.runOnce(() -> intake.setPivotSetpoint(PivotGoal.DEPLOY)));
-
-      operatorController
-        .povDown()
-        .whileTrue(Commands.runOnce(
-          () -> shooter.setManualVoltage(4.5),
-          shooter
-        ));
-
-      operatorController
-        .povLeft()
-        .whileTrue(Commands.runOnce(
-          () -> shooter.setManualVoltage(5.5),
-          shooter
-        ));
-
-        operatorController
-          .povUp()
-          .whileTrue(Commands.runOnce(
-            () -> shooter.setManualVoltage(7),
-            shooter
-          ));
-
-        operatorController
-          .povUp()
-          .whileTrue(Commands.runOnce(
-            () -> shooter.setManualVoltage(10),
-            shooter
-          ));
-
-        driverController
-          .rightStick()
-          .whileTrue(Commands.runOnce(
-            () -> shooter.setGoal(ShooterGoal.STOP),
-            shooter
-          ));
-
-          */
+   
   }
 
   public Command getAutonomousCommand() {
