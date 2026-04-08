@@ -22,24 +22,15 @@ public class ShooterConstants {
     public static final double kV = 0.0;
     public static final double kA = 0.0;
 
-    public static final double simulatedKp = 0.0;
-    public static final double simulatedKi = 0.0;
-    public static final double simulatedKd = 0.0;
-    public static final double simulatedKs = 0.0;
-    public static final double simulatedKv = 0.0;
-    public static final double simulatedKa = 0.0;
-
-    public static final boolean kPrimaryShooterMotorInverted = false;
+    public static final boolean kPrimaryShooterMotorInverted = true;
     public static final boolean kOtherShooterMotorInverted = true;
     public static final double kShooterMotorReduction = (24.0 / 18.0);
-    public static final Current kShooterMotorSupplyLimit = Amps.of(25);
+    public static final DCMotor kShooterSimulatedGearbox = DCMotor.getKrakenX60Foc(4);
+
+    public static final Current kShooterMotorSupplyLimit = Amps.of(70);
     public static final Current kShooterMotorStatorLimit = Amps.of(80);
-    public static final DCMotor kShooterSimulatedGearbox = DCMotor.getKrakenX60Foc(3);
 
     public static final MomentOfInertia kShooterMOI = KilogramSquareMeters.of(0.1);
-
-    public static final double kShooterMotorPositionConversionFactor = (1 / kShooterMotorReduction) * 2 * Math.PI;
-    public static final double kShooterMotorVelocityConversionFactor = 1 / kShooterMotorPositionConversionFactor;
 
     public static Transform3d kRobotToShooterTransform = new Transform3d(-0.276, 0.09, 0.599, new Rotation3d(0.0, 0.0, Math.PI));
 }
