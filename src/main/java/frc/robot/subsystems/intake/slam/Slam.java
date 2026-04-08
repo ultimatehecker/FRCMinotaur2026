@@ -14,6 +14,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
@@ -24,6 +25,8 @@ import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.IntakeConstants;
 
 import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 
 import java.util.function.DoubleSupplier;
 
@@ -32,17 +35,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 
 public class Slam {
-    private static final LoggedTunableNumber kP = new LoggedTunableNumber("Slam/kP");
-    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Slam/kD");
-    private static final LoggedTunableNumber kS = new LoggedTunableNumber("Slam/kS");
-    private static final LoggedTunableNumber kG = new LoggedTunableNumber("Slam/kG");
-    private static final LoggedTunableNumber kA = new LoggedTunableNumber("Slam/kA");
+    private static final LoggedTunableNumber kP = new LoggedTunableNumber("Intake/Slam/kP");
+    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Intake/Slam/kD");
+    private static final LoggedTunableNumber kS = new LoggedTunableNumber("Intake/Slam/kS");
+    private static final LoggedTunableNumber kG = new LoggedTunableNumber("Intake/Slam/kG");
+    private static final LoggedTunableNumber kA = new LoggedTunableNumber("Intake/Slam/kA");
 
-    private static final LoggedTunableNumber kMaximumVelocityMetersPerSec = new LoggedTunableNumber("Slam/MaximumVelocityMetersPerSec", 8.0);
-    private static final LoggedTunableNumber kMaximumAccelerationMetersPerSec2 = new LoggedTunableNumber("Slam/MaximumAccelerationMetersPerSec2", 80.0);
-    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Slam/HomingVoltage", -3.0);
-    private static final LoggedTunableNumber kHomingTimeSeconds = new LoggedTunableNumber("Slam/HomingTimeSeconds", 0.4);
-    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Slam/HomingVelocityThreshold", 0.1);
+    private static final LoggedTunableNumber kPivotMaximumAngle = new LoggedTunableNumber("Intake/Slam/MaximumAngle", IntakeConstants.kIntakeMaximumPosition.in(Radians));
+    private static final LoggedTunableNumber kMaximumVelocityRadiansPerSecond = new LoggedTunableNumber("Intake/Slam/MaxVelocityRadiansPerSecond", IntakeConstants.kPivotMaximumRotationalVelocity.in(RadiansPerSecond));
+    private static final LoggedTunableNumber kMaximumAccelerationRadiansPerSecond2 = new LoggedTunableNumber("Intake/Slam/MaxAccelerationRadiansPerSecond2", IntakeConstants.kPivotMaximumRotationalAcceleration.in(RadiansPerSecondPerSecond));
+    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Intake/Slam/HomingVoltage", -3.0);
+    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Intake/Slam/HomingTimeSeconds", 0.4);
+    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Intake/Slam/HomingVelocityThreshold", 0.1);
 
     static {
         switch (GlobalConstants.getRobot()) {
@@ -77,7 +81,10 @@ public class Slam {
 
     private TrapezoidProfile profile;
     @Getter private State setpoint = new State();
-    @Getter private double requestedPosition = IntakeConstants.kIntakeMinimumPosition.in(Radians);
+
+    @Getter 
+    @AutoLogOutput(key = "Intake/Slam/RequestedPosition") 
+    private double requestedPosition = IntakeConstants.kIntakeMinimumPosition.in(Radians);
     private boolean stopProfile = false;
 
     @AutoLogOutput(key = "Intake/Slam/HomedPositionRadians")
@@ -87,7 +94,7 @@ public class Slam {
     @Getter
     private boolean homed = true; // TODO: Revert to false when the homing system works
 
-    private Debouncer homingDebouncer = new Debouncer(kHomingTimeSeconds.get());
+    private Debouncer homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
     private final Command homingCommand;
 
     @Getter
@@ -110,7 +117,7 @@ public class Slam {
         io);
 
         profile = new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(kMaximumVelocityMetersPerSec.get(), kMaximumAccelerationMetersPerSec2.get())
+            new TrapezoidProfile.Constraints(kMaximumVelocityRadiansPerSecond.get(), kMaximumAccelerationRadiansPerSecond2.get())
         );
 
         homingCommand = homingSequence();
@@ -129,9 +136,12 @@ public class Slam {
             io.setPID(kP.get(), 0.0, kD.get());
         }
 
-        if (kMaximumVelocityMetersPerSec.hasChanged(hashCode()) || kMaximumAccelerationMetersPerSec2.hasChanged(hashCode())) {
+        if (kMaximumVelocityRadiansPerSecond.hasChanged(hashCode()) || kMaximumAccelerationRadiansPerSecond2.hasChanged(hashCode())) {
             profile = new TrapezoidProfile(
-                new TrapezoidProfile.Constraints(kMaximumVelocityMetersPerSec.get(), kMaximumAccelerationMetersPerSec2.get())
+                new TrapezoidProfile.Constraints(
+                    kMaximumVelocityRadiansPerSecond.get(), 
+                    kMaximumAccelerationRadiansPerSecond2.get()
+                )
             );
         }
 
@@ -139,12 +149,11 @@ public class Slam {
         wantsToDeploy = !homed || (getMeasuredAngleRad() < IntakeConstants.kIntakeMaximumPosition.in(Radians) / 2.0);
 
         if (DriverStation.isEnabled() && !homed && !homingCommand.isScheduled()) {
-            homingCommand.schedule();
+            CommandScheduler.getInstance().schedule(homingCommand);
         }
 
         // Run profile
-        final boolean shouldRunProfile =
-            !stopProfile
+        final boolean shouldRunProfile = !stopProfile
             && brakeModeEnabled
             && (homed || GlobalConstants.getRobot() == GlobalConstants.RobotType.SIMBOT)
             && DriverStation.isEnabled();
@@ -152,47 +161,51 @@ public class Slam {
         Logger.recordOutput("Intake/Slam/RunningProfile", shouldRunProfile);
 
         if (shouldRunProfile) {
-            var goalState = new State(MathUtil.clamp(requestedPosition, 0.0, IntakeConstants.kIntakeMaximumPosition.in(Radians)), 0.0);
+            var goalState = new State(MathUtil.clamp(requestedPosition, 0.0, kPivotMaximumAngle.get()), 0.0);
             double previousVelocity = setpoint.velocity;
             setpoint = profile.calculate(GlobalConstants.kLoopPeriodSeconds, setpoint, goalState);
 
-            if (setpoint.position < 0.0 || setpoint.position > IntakeConstants.kIntakeMaximumPosition.in(Radians)) {
-                setpoint = new State(MathUtil.clamp(setpoint.position, 0.0, IntakeConstants.kIntakeMaximumPosition.in(Radians)), 0.0);
+            if (setpoint.position < 0.0 || setpoint.position > kPivotMaximumAngle.get()) {
+                setpoint = new State(MathUtil.clamp(setpoint.position, 0.0, kPivotMaximumAngle.get()), 0.0);
             }
 
-            // Check at goal
             atGoal = EqualsUtility.epsilonEquals(setpoint.position, goalState.position) && EqualsUtility.epsilonEquals(setpoint.velocity, goalState.velocity);
-            // Run
-            double acceleration = (setpoint.velocity - previousVelocity) / GlobalConstants.kLoopPeriodSeconds;
+
+            double accel = (setpoint.velocity - previousVelocity) / GlobalConstants.kLoopPeriodSeconds;
             io.setPosition(
                 setpoint.position + homedPosition,
-                kS.get() * Math.signum(setpoint.velocity) + kG.get() * Math.cos(setpoint.position) + kA.get() * acceleration
+                kS.get() * Math.signum(setpoint.velocity) + kG.get() * Math.cos(setpoint.position) + kA.get() * accel
             );
 
-            Logger.recordOutput("Intake/Slam/Profile/SetpointPositionMeters", setpoint.position);
-            Logger.recordOutput("Intake/Slam/Profile/SetpointVelocityMetersPerSec", setpoint.velocity);
-            Logger.recordOutput("Intake/Slam/Profile/GoalPositionMeters", goalState.position);
-            Logger.recordOutput("Intake/Slam/Profile/GoalVelocityMetersPerSec", goalState.velocity);
+            // Log state
+            Logger.recordOutput("Intake/Slam/Profile/SetpointPositionRadians", setpoint.position);
+            Logger.recordOutput("Intake/Slam/Profile/SetpointVelocityRadiansPerSecond", setpoint.velocity);
+            Logger.recordOutput("Intake/Slam/Profile/GoalPositionRadians", goalState.position);
+            Logger.recordOutput("Intake/Slam/Profile/GoalVelocityRadiansPerSecond", goalState.velocity);
         } else {
             // Reset setpoint
             setpoint = new State(getMeasuredAngleRad(), 0.0);
 
             // Clear logs
-            Logger.recordOutput("Intake/Slam/Profile/SetpointPositionMeters", 0.0);
-            Logger.recordOutput("Intake/Slam/Profile/SetpointVelocityMetersPerSec", 0.0);
-            Logger.recordOutput("Intake/Slam/Profile/GoalPositionMeters", 0.0);
-            Logger.recordOutput("Intake/Slam/Profile/GoalVelocityMetersPerSec", 0.0);
+            Logger.recordOutput("Intake/Slam/Profile/SetpointPositionRadians", 0.0);
+            Logger.recordOutput("Intake/Slam/Profile/SetpointVelocityRadiansPerSecond", 0.0);
+            Logger.recordOutput("Intake/Slam/Profile/GoalPositionRadians", 0.0);
+            Logger.recordOutput("Intake/Slam/Profile/GoalVelocityRadiansPerSecond", 0.0);
         }
 
         // Log state
-        Logger.recordOutput("Intake/Slam/MeasuredVelocityMetersPerSec", inputs.velocityRadiansPerSecond);
-        LoggedTracer.record("Slam");
+        Logger.recordOutput("Intake/Slam/MeasuredVelocityRadiansPerSecond", inputs.velocityRadiansPerSecond);
+        LoggedTracer.record("SlamPeriodic");
     }
 
-    public void setSetpointPosition(double requestedPosition) {
-        if (requestedPosition == this.requestedPosition) return;
-        this.requestedPosition = requestedPosition;
+    public void setSetpointPosition(double position) {
+        if (requestedPosition == position) return;
+        this.requestedPosition = position;
         atGoal = false;
+    }
+
+    public void stop() {
+        io.setVoltage(0.0);
     }
 
     public void setBrakeMode(boolean enabled) {
@@ -211,7 +224,7 @@ public class Slam {
         return Commands.startRun(() -> {
             stopProfile = true;
             homed = false;
-            homingDebouncer = new Debouncer(kHomingTimeSeconds.get());
+            homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
             homingDebouncer.calculate(false);
         }, () -> {
             if (!brakeModeEnabled) return;
@@ -230,7 +243,7 @@ public class Slam {
     }
 
     /** Get position of slam with maxAngle at home */
-    @AutoLogOutput(key = "Intake/Slam/MeasuredAngleRads")
+    @AutoLogOutput(key = "Intake/Slam/MeasuredAngleRadians")
     public double getMeasuredAngleRad() {
         return inputs.positionRadians - homedPosition;
     }
