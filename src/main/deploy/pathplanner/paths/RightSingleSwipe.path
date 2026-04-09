@@ -1,0 +1,95 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.420944444444444,
+        "y": 0.45878888888888814
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.330855555555555,
+        "y": 0.887544444444444
+      },
+      "isLocked": false,
+      "linkedName": "RightTrenchStartPose"
+    },
+    {
+      "anchor": {
+        "x": 8.231022222222222,
+        "y": 1.3260444444444444
+      },
+      "prevControl": {
+        "x": 7.854632867348317,
+        "y": 0.2596079389683832
+      },
+      "nextControl": {
+        "x": 8.64028888888889,
+        "y": 2.485633333333333
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.474633333333333,
+        "y": 3.625733333333333
+      },
+      "prevControl": {
+        "x": 8.569291544763459,
+        "y": 3.3943465942819135
+      },
+      "nextControl": {
+        "x": 8.133074296339416,
+        "y": 4.460655423762911
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.710888888888889,
+        "y": 2.505122222222221
+      },
+      "prevControl": {
+        "x": 7.266322222222223,
+        "y": 3.479566666666666
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "RightTrenchSingleS"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1,
+      "rotationDegrees": 88.66778014613024
+    },
+    {
+      "waypointRelativePos": 2.362655601659701,
+      "rotationDegrees": 180.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 4.5,
+    "maxAcceleration": 6.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -111.63088683651792
+  },
+  "reversed": false,
+  "folder": "Right",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 0.0
+  },
+  "useDefaultConstraints": true
+}
