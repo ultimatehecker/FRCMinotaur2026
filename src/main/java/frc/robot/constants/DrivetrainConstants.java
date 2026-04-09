@@ -72,7 +72,7 @@ public class DrivetrainConstants {
     public static final double steerKs = 0.1;
     public static final double steerKv = 1.79;
     public static final double steerKa = 0.0;
-    public static final double steerSimulatedKp = 100.0;
+    public static final double steerSimulatedKp = 80.0;
     public static final double steerSimulatedKi = 0.0;
     public static final double steerSimulatedKd = 0.5;
     public static final double steerSimulatedKs = 0.1;
