@@ -20,6 +20,10 @@ public interface DriverControllerIO {
 
     public Trigger automaticallyShoot();
 
+    public Trigger automaticallyAim();
+
+    public Trigger automaticallyHang();
+
     public XboxController getPrimaryHID();
 
     public void rumble(boolean intensity);

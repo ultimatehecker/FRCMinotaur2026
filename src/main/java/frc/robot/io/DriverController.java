@@ -72,6 +72,16 @@ public class DriverController implements DriverControllerIO {
     }
 
     @Override
+    public Trigger automaticallyAim() {
+        return controller.rightBumper();
+    }
+
+    @Override
+    public Trigger automaticallyHang() {
+        return controller.povLeft();
+    }
+
+    @Override
     public XboxController getPrimaryHID() {
         return controller.getHID();
     }

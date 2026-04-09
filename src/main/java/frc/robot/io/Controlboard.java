@@ -62,6 +62,16 @@ public class Controlboard implements DriverControllerIO, OperatorControllerIO {
     }
 
     @Override
+    public Trigger automaticallyAim() {
+        return driverController.automaticallyAim();
+    }
+
+    @Override
+    public Trigger automaticallyHang() {
+        return driverController.automaticallyHang();
+    }
+
+    @Override
     public XboxController getPrimaryHID() {
         return driverController.getPrimaryHID();
     }
@@ -69,6 +79,21 @@ public class Controlboard implements DriverControllerIO, OperatorControllerIO {
     @Override
     public XboxController getSecondaryHID() {
         return operatorController.getSecondaryHID();
+    }
+
+    @Override
+    public Trigger selectCloseShootingPreset() {
+        return operatorController.selectCloseShootingPreset();
+    } 
+
+    @Override
+    public Trigger selectMediumShootingPreset() {
+        return operatorController.selectMediumShootingPreset();
+    }
+
+    @Override
+    public Trigger selectFarShootingPreset() {
+        return operatorController.selectFarShootingPreset();
     }
 
     @Override
