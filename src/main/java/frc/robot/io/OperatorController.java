@@ -22,9 +22,9 @@ public class OperatorController implements OperatorControllerIO {
 
     private OperatorController() {
         if (Robot.isSimulation()) {
-            controller = new CommandSimulatedXboxController(ControllerConstants.kDriverControllerPort);
+            controller = new CommandSimulatedXboxController(ControllerConstants.kOperatorControllerPort);
         } else {
-            controller = new CommandXboxController(ControllerConstants.kDriverControllerPort);
+            controller = new CommandXboxController(ControllerConstants.kOperatorControllerPort);
         }
     }
 
@@ -46,5 +46,15 @@ public class OperatorController implements OperatorControllerIO {
     @Override
     public Trigger selectFarShootingPreset() {
         return controller.povUp();
+    }
+
+    @Override
+    public Trigger deployClimber() {
+        return controller.rightBumper();
+    }
+
+    @Override
+    public Trigger stowClimber() {
+        return controller.leftBumper();
     }
 }

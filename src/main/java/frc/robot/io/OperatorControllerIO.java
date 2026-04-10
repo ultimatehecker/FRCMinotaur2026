@@ -11,4 +11,8 @@ public interface OperatorControllerIO {
     public Trigger selectMediumShootingPreset();
 
     public Trigger selectFarShootingPreset();
+
+    public Trigger deployClimber();
+
+    public Trigger stowClimber();
 }

@@ -62,8 +62,18 @@ public class DriverController implements DriverControllerIO {
     }
 
     @Override
-    public Trigger stowIntake() {
+    public Trigger exhaust() {
         return controller.leftBumper();
+    }
+
+    @Override
+    public Trigger stowIntake() {
+        return controller.a();
+    }
+
+    @Override
+    public Trigger rollIndexer() {
+        return controller.y();
     }
 
     @Override
