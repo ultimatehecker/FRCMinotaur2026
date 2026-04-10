@@ -15,11 +15,17 @@
           "data": {
             "pathName": "NOP Killcode Right P2"
           }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooting OL Sequence Close"
+          }
         }
       ]
     }
   },
   "resetOdom": true,
-  "folder": "Right",
+  "folder": null,
   "choreoAuto": false
 }

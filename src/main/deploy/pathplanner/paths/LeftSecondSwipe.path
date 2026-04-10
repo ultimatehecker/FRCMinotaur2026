@@ -1,0 +1,103 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 2.7449,
+        "y": 5.8767
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 2.369971469329529,
+        "y": 7.496091298145506
+      },
+      "isLocked": false,
+      "linkedName": "LeftShoot"
+    },
+    {
+      "anchor": {
+        "x": 4.543666191155491,
+        "y": 7.4572753209700435
+      },
+      "prevControl": {
+        "x": 4.017472868561719,
+        "y": 7.450305872988669
+      },
+      "nextControl": {
+        "x": 6.49740370898716,
+        "y": 7.48315263908702
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.811654778887304,
+        "y": 4.6495863052781745
+      },
+      "prevControl": {
+        "x": 5.785369339009434,
+        "y": 6.331854457461937
+      },
+      "nextControl": {
+        "x": 5.824593437945791,
+        "y": 3.82151212553495
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 6.730299572039942,
+        "y": 6.305734664764623
+      },
+      "prevControl": {
+        "x": 6.911440798858774,
+        "y": 2.372382310984309
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "Left2ndSwipe"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 2,
+      "rotationDegrees": -89.20427644726078
+    },
+    {
+      "waypointRelativePos": 2.5458422174839517,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 2.7761194029850444,
+      "rotationDegrees": 78.56245514737218
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [],
+  "globalConstraints": {
+    "maxVelocity": 4.5,
+    "maxAcceleration": 6.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 103.24051991518687
+  },
+  "reversed": false,
+  "folder": "Left",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 127.7159763455831
+  },
+  "useDefaultConstraints": true
+}

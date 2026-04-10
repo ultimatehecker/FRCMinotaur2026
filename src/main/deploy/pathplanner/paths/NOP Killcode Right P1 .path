@@ -49,21 +49,15 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "StartIntakeRoller",
-      "waypointRelativePos": 0.7205955334987404,
-      "endWaypointRelativePos": null,
-      "command": null
-    },
-    {
-      "name": "DeployIntake",
-      "waypointRelativePos": 0.7722084367245463,
+      "name": "Deploy and Intake",
+      "waypointRelativePos": 0.35545556805398193,
       "endWaypointRelativePos": null,
       "command": null
     }
   ],
   "globalConstraints": {
     "maxVelocity": 4.0,
-    "maxAcceleration": 5.4,
+    "maxAcceleration": 4.5,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
     "nominalVoltage": 12.0,
@@ -79,5 +73,5 @@
     "velocity": 0,
     "rotation": -179.68450125244158
   },
-  "useDefaultConstraints": false
+  "useDefaultConstraints": true
 }

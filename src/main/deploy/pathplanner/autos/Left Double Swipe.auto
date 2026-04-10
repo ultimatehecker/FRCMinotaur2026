@@ -7,13 +7,31 @@
         {
           "type": "path",
           "data": {
-            "pathName": "NOP killcode Left P1"
+            "pathName": "LeftSingleSwipe"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "NOP killcode Left P2"
+            "pathName": "LeftSingleShoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooting OL Sequence Close"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "LeftSecondSwipe"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "LeftSecondShoot"
           }
         },
         {
