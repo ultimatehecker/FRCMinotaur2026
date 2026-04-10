@@ -173,7 +173,7 @@ public class Slam {
 
             double accel = (setpoint.velocity - previousVelocity) / GlobalConstants.kLoopPeriodSeconds;
             io.setPosition(
-                setpoint.position + homedPosition,
+                setpoint.position,
                 kS.get() * Math.signum(setpoint.velocity) + kG.get() * Math.cos(setpoint.position) + kA.get() * accel
             );
 

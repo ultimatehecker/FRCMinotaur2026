@@ -33,6 +33,7 @@ public class Indexer extends SubsystemBase {
     public enum IndexerGoal {
         STOP(new LoggedTunableNumber("Indexer/StopVoltage", 0.0)),
         FEED(new LoggedTunableNumber("Indexer/IntakeVoltage", 12.0)),
+        CHURN(new LoggedTunableNumber("Indexer/ChurnVoltage", 4.0)),
         EXHAUST(new LoggedTunableNumber("Indexer/ExhaustVoltage", -6.0)),
         IDLE(new LoggedTunableNumber("Indexer/IdleVoltage", 1.5));
 

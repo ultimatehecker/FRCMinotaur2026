@@ -58,8 +58,6 @@ public interface DrivetrainIO {
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier, Subsystem subsystemRequired);
 
-    public void seedFieldCentric();
-
     public default void setOperatorPerspectiveForward(Rotation2d operatorPerspective) {}
 
     public void setBrakeMode(boolean enable);

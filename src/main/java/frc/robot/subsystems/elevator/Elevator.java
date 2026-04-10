@@ -62,7 +62,8 @@ public class Elevator extends SubsystemBase {
         STOW,
         DEPLOY,
         CLIMB,
-        HOME
+        HOME,
+        MANUAL
     }
 
     public enum ElevatorState {
@@ -73,11 +74,12 @@ public class Elevator extends SubsystemBase {
         DEPLOYED,
         CLIMBING,
         CLIMBED,
-        HOMING
+        HOMING,
+        MANUAL
     }
 
-    @Getter @Setter @AutoLogOutput private ElevatorGoal goal = ElevatorGoal.STOW;
-    @Getter @AutoLogOutput private ElevatorState state = ElevatorState.STOWED;
+    @Getter @Setter @AutoLogOutput private ElevatorGoal goal = ElevatorGoal.IDLE;
+    @Getter @AutoLogOutput private ElevatorState state = ElevatorState.IDLE;
 
     private final ElevatorIO io;
     private final ElevatorIOInputsAutoLogged inputs = new ElevatorIOInputsAutoLogged();
@@ -87,6 +89,8 @@ public class Elevator extends SubsystemBase {
 
     private final Alert motorDisconnectedAlert = new Alert("The elevator motor is disconnected!", AlertType.kError);
     private final Alert motorTemperatureAlert = new Alert("The elevator motor is overheating!", AlertType.kWarning);
+
+    private double voltageSetpoint = 0.0;
 
     public Elevator(ElevatorIO io) {
         this.io = io;
@@ -152,6 +156,7 @@ public class Elevator extends SubsystemBase {
                 yield atSetpoint() ? ElevatorState.CLIMBED : ElevatorState.CLIMBING;
             }
             case HOME -> ElevatorState.HOMING;
+            case MANUAL -> ElevatorState.MANUAL;
         };
     }
 
@@ -182,11 +187,17 @@ public class Elevator extends SubsystemBase {
             case HOMING -> {
 
             }
+            case MANUAL -> io.setVoltage(voltageSetpoint);
         }
     }
 
     public void setGoal(ElevatorGoal goal) {
         this.goal = goal;
+    }
+
+    public void runVoltage(double voltageSetpoint) {
+        goal = ElevatorGoal.MANUAL;
+        this.voltageSetpoint = voltageSetpoint;
     }
 
     private boolean atTarget(double targetDegrees) {

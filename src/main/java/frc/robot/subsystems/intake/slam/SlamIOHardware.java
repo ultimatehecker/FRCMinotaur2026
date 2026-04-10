@@ -28,6 +28,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -59,7 +60,7 @@ public class SlamIOHardware implements SlamIO {
 
     public SlamIOHardware() {
         motor = new TalonFX(14, GlobalConstants.kRioBus.getParent());
-        encoder = new CANcoder(15, GlobalConstants.kRioBus.getParent());
+        encoder = new CANcoder(16, GlobalConstants.kRioBus.getParent());
 
         encoderConfiguration = new CANcoderConfiguration()
             .withMagnetSensor(
@@ -150,7 +151,7 @@ public class SlamIOHardware implements SlamIO {
     public void setPosition(double positionRadians, double feedforward) {
         motor.setControl(
             positionTorqueCurrentRequest
-                .withPosition(positionRadians)
+                .withPosition(Units.radiansToRotations(positionRadians))
                 .withFeedForward(feedforward)
         );
     }

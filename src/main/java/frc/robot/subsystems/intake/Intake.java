@@ -25,14 +25,17 @@ public class Intake extends SubsystemBase {
     private static final LoggedTunableNumber kStowedPosition = new LoggedTunableNumber("Intake/Slam/StowedPosition", 56.9);
     private static final LoggedTunableNumber kDeployedPosition = new LoggedTunableNumber("Intake/Slam/DeployedPosition", 187.4);
     private static final LoggedTunableNumber kHalfDeployPosition = new LoggedTunableNumber("Intake/Slam/HalfPosition", 120.0);
-    private static final LoggedTunableNumber kRollerVoltage = new LoggedTunableNumber("Intake/Roller/IntakeVoltage", 12.0);
+    private static final LoggedTunableNumber kFeedPosition = new LoggedTunableNumber("Intake/Slam/FeedPosition", 140.0);
+    private static final LoggedTunableNumber kRollerVoltage = new LoggedTunableNumber("Intake/Roller/IntakeVoltage", 10.0);
     private static final LoggedTunableNumber kExhaustVoltage = new LoggedTunableNumber("Intake/Roller/ExhaustVoltage", -6.0);
+    private static final LoggedTunableNumber kIdleVoltage = new LoggedTunableNumber("Intake/Roller/IdleVoltage", 2.0);
 
     public enum IntakeGoal {
         IDLE,
         STOW,
         DEPLOY,
         DEPLOY_HALF,
+        FEED,
         INTAKE,
         EXHAUST
     }
@@ -44,6 +47,7 @@ public class Intake extends SubsystemBase {
         DEPLOYING,
         DEPLOYED,
         DEPLOYED_HALF,
+        FEED,
         INTAKING,
         EXHAUSTING
     }
@@ -87,6 +91,10 @@ public class Intake extends SubsystemBase {
                 slam.setSetpointPosition(Units.degreesToRadians(kHalfDeployPosition.get()));
                 yield slam.atGoal() ? IntakeState.DEPLOYED_HALF : IntakeState.DEPLOYING;
             }
+            case FEED -> {
+                slam.setSetpointPosition(Units.degreesToRadians(kFeedPosition.get()));
+                yield slam.atGoal() ? IntakeState.FEED : IntakeState.DEPLOYING;
+            }
             case INTAKE -> IntakeState.INTAKING;
             case EXHAUST -> IntakeState.EXHAUSTING;
         };
@@ -95,7 +103,6 @@ public class Intake extends SubsystemBase {
     private void applyOutputs() {
         switch (state) {
             case IDLE -> {
-                slam.stop();
                 roller.stop();
             }
 
@@ -105,7 +112,6 @@ public class Intake extends SubsystemBase {
             }
 
             case STOWED -> {
-                slam.stop();
                 roller.stop();
             }
 
@@ -117,6 +123,10 @@ public class Intake extends SubsystemBase {
 
             case DEPLOYED, DEPLOYED_HALF -> {
                 roller.stop();
+            }
+
+            case FEED -> {
+                roller.setVoltage(kIdleVoltage.get());
             }
 
             case INTAKING -> {

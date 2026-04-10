@@ -24,8 +24,8 @@ import frc.minolib.hardware.MinoCANDevice;
 public class IntakeConstants {
     public static final AngularVelocity kRollerMaximumRotationalVelocity = RadiansPerSecond.of(4.2);
     public static final AngularAcceleration kRollerMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6.0);
-    public static final AngularVelocity kPivotMaximumRotationalVelocity = RadiansPerSecond.of(4 * Math.PI);
-    public static final AngularAcceleration kPivotMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6 * Math.PI);
+    public static final AngularVelocity kPivotMaximumRotationalVelocity = RadiansPerSecond.of(3 * Math.PI);
+    public static final AngularAcceleration kPivotMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(7 * Math.PI);
 
     public static final MinoCANDevice kPivotMotor = new MinoCANDevice(14, GlobalConstants.kRioBus);
     public static final MinoCANDevice kRollerMotor = new MinoCANDevice(15, GlobalConstants.kRioBus);
@@ -45,8 +45,8 @@ public class IntakeConstants {
     public static final MomentOfInertia kRollerMOI = MomentOfInertia.ofBaseUnits(0.0009, KilogramSquareMeters);
     public static final MomentOfInertia kPivotMOI = MomentOfInertia.ofBaseUnits(0.02, KilogramSquareMeters);
 
-    public static final double pivotkP = 0.1;
-    public static final double pivotkD = 0.0;
+    public static final double pivotkP = 175;
+    public static final double pivotkD = 5.0;
     public static final double pivotkS = 0.085;
     public static final double pivotkV = 0.0;
     public static final double pivotkG = 0.255;
@@ -59,7 +59,7 @@ public class IntakeConstants {
     public static final Current kPivotMotorStatorLimit = Amps.of(80);
     public static final Current kPivotMotorSupplyLimit = Amps.of(40);
 
-    public static final double rollerkP = 0.0;
+    public static final double rollerkP = 5.0;
     public static final double rollerkD = 0.0;
     public static final double rollerkS = 0.0;
     public static final double rollerkV = 0.0;
@@ -69,7 +69,7 @@ public class IntakeConstants {
     public static final double kRollerMotorReduction = (24.0 / 12.0);
     public static final DCMotor kRollerSimulatedGearbox = DCMotor.getFalcon500Foc(1);
 
-    public static final Current kRollerMotorStatorLimit = Amps.of(120);
+    public static final Current kRollerMotorStatorLimit = Amps.of(90);
     public static final Current kRollerMotorSupplyLimit = Amps.of(40);
 
     public static final double kRollerVelocityFilterTimeConstant = 0.1;

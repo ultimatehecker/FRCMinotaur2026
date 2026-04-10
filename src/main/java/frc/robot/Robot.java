@@ -18,36 +18,26 @@ import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
 import com.ctre.phoenix6.SignalLogger;
-import com.google.flatbuffers.Constants;
 import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 
 import edu.wpi.first.hal.AllianceStationID;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj.IterativeRobotBase;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.Watchdog;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
+
 import frc.minolib.advantagekit.LocalADStarAK;
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.hardware.MinoCANBus;
 import frc.minolib.io.BatteryIOInputsAutoLogged;
 import frc.minolib.utilities.BatteryLogger;
-import frc.robot.command_factories.DrivetrainFactory;
 import frc.robot.constants.BuildConstants;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.GlobalConstants.RobotType;
@@ -113,7 +103,6 @@ public class Robot extends LoggedRobot {
 
     LiveWindow.disableAllTelemetry();
     Logger.start();
-    SignalLogger.start();
 
     Pathfinding.setPathfinder(new LocalADStarAK());
 

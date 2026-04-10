@@ -19,6 +19,7 @@ public class Controlboard implements DriverControllerIO, OperatorControllerIO {
     private Controlboard() {
         driverController = DriverController.getInstance();
         operatorController = OperatorController.getInstance();
+
     }
 
     @Override
@@ -52,8 +53,18 @@ public class Controlboard implements DriverControllerIO, OperatorControllerIO {
     }
 
     @Override
+    public Trigger exhaust() {
+        return driverController.exhaust();
+    }
+
+    @Override
     public Trigger stowIntake() {
         return driverController.stowIntake();
+    }
+
+    @Override
+    public Trigger rollIndexer() {
+        return driverController.rollIndexer();
     }
 
     @Override
@@ -97,7 +108,18 @@ public class Controlboard implements DriverControllerIO, OperatorControllerIO {
     }
 
     @Override
+    public Trigger deployClimber() {
+        return operatorController.deployClimber();
+    }
+
+    @Override
+    public Trigger stowClimber() {
+        return operatorController.stowClimber();
+    }
+
+    @Override
     public void rumble(boolean intensity) {
         driverController.rumble(intensity);
     }
 }
+

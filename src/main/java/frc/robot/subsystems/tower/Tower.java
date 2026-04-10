@@ -35,7 +35,7 @@ public class Tower extends SubsystemBase {
 
     @RequiredArgsConstructor
     public enum TowerGoal {
-        FEED(new LoggedTunableNumber("Tower/FeedVoltage", 12.0)),
+        FEED(new LoggedTunableNumber("Tower/FeedVoltage", 4.0)),
         EXHAUST(new LoggedTunableNumber("Tower/ExhaustVoltage", -6.0)),
         STOP(new LoggedTunableNumber("Tower/StopVoltage", 0.0));
 
@@ -96,7 +96,7 @@ public class Tower extends SubsystemBase {
         }
         
         topRoller.setVoltage(appliedVoltage);
-        bottomRoller.setVoltage(appliedVoltage);
+        bottomRoller.setVoltage(appliedVoltage == 0 ? appliedVoltage : appliedVoltage + 1.5);
 
         LoggedTracer.record("TowerPeriodic");
     }

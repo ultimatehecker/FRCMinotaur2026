@@ -104,11 +104,6 @@ public class DrivetrainIOSimulation extends DrivetrainIOHardware {
         super.resetOdometry(pose);
     }
 
-    @Override
-    public void seedFieldCentric() {
-
-    }
-
     public Pose2d getSimulatedPose() {
         return simulatedSwerveDrivetrain != null ? lastConsumedPose : null;
     }

@@ -8,6 +8,7 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.DoubleSupplier;
 import java.util.zip.ZipEntry;
@@ -23,15 +24,20 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.minolib.advantagekit.LoggedTunableNumber;
+import frc.minolib.controller.driverstation.OperatorButtonBoard;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.robot.command_factories.DrivetrainFactory;
 import frc.robot.command_factories.IntakeFactory;
+import frc.robot.constants.ControllerConstants;
 import frc.robot.constants.DrivetrainConstants;
 import frc.robot.constants.IndexerConstants;
 import frc.robot.constants.IntakeConstants;
@@ -66,6 +72,7 @@ import frc.robot.subsystems.tower.Tower.TowerGoal;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIOPhotonVision;
 import frc.robot.subsystems.vision.VisionIOSimulation;
+import frc.robot.utilities.HubShiftUtility;
 
 public class RobotContainer {
   private final Consumer<WeightedPoseEstimate> visionEstimateConsumer = new Consumer<WeightedPoseEstimate>() {
@@ -85,11 +92,23 @@ public class RobotContainer {
   private Elevator elevator;
 
   private Controlboard controlboard = Controlboard.getInstance();
+  private final OperatorButtonBoard primaryButtonBoard = new OperatorButtonBoard(ControllerConstants.kDriverControllerPort);
+  private final OperatorButtonBoard secondaryButtonBoard = new OperatorButtonBoard(ControllerConstants.kOperatorConsolePort);
+
+  // Primary operator panel overrides
+  private final Trigger robotRelative = primaryButtonBoard.spstSwitch(11);
+  private final Trigger coast = primaryButtonBoard.spstSwitch(10);
+  private final Trigger disableAutoShooter = primaryButtonBoard.spstSwitch(9);
+  private final Trigger wonAutoOverride = primaryButtonBoard.spstSwitch(8);
+  private final Trigger lostAutoOverride = primaryButtonBoard.spstSwitch(8);
+
   private final LoggedDashboardChooser<Command> autoRegistry;
 
-  private final Alert primaryDisconnected = new Alert("Primary controller disconnected (port 0).", AlertType.kWarning);
-  private final Alert secondaryDisconnected = new Alert("Secondary controller disconnected (port 1).", AlertType.kWarning);
-  private final Alert overrideDisconnected = new Alert("Override controller disconnected (port 5).", AlertType.kInfo);
+  private final Alert driverControllerDisconnected = new Alert("Primary controller disconnected (port 0).", AlertType.kWarning);
+  private final Alert operatorControllerDisconnected = new Alert("Secondary controller disconnected (port 1).", AlertType.kWarning);
+  private final Alert primaryButtonBoardDisconnected = new Alert("Primary Button Board disconnected (port 2).", AlertType.kWarning);
+  private final Alert secondaryButtonBoardDisconnected = new Alert("Primary Button Board disconnected (port 2).", AlertType.kWarning);
+  private final Alert autoWinnerNotSet = new Alert("Winner of Autonomous has not been set", AlertType.kError);
 
   private Drivetrain buildDrivetrain() {
     if(Robot.isSimulation()) {
@@ -184,20 +203,6 @@ public class RobotContainer {
     }
   }
 
-  private Vision buildVision() {
-    if(Robot.isSimulation()) {
-      return new Vision(
-        robotState,
-        new VisionIOSimulation(VisionConstants.kBackLeftConfiguration, VisionConstants.kAprilTagLayout, robotState)
-      );
-    } else {
-      return new Vision(
-        robotState,
-        new VisionIOPhotonVision(VisionConstants.kBackLeftConfiguration, VisionConstants.kAprilTagLayout)
-      );
-    }
-  }
-
   public Drivetrain getDrivetrain() {
     return drivetrain;
   }
@@ -214,6 +219,18 @@ public class RobotContainer {
     shooter = buildShooter();
     hood = buildHood();
     elevator = buildElevator();
+
+    HubShiftUtility.setAllianceWinOverride(() -> {
+      if (lostAutoOverride.getAsBoolean()) {
+        return Optional.of(false);
+      }
+
+      if (wonAutoOverride.getAsBoolean()) {
+        return Optional.of(true);
+      }
+
+      return Optional.empty();
+    });
 
     configureNamedCommands();
 
@@ -301,7 +318,7 @@ public class RobotContainer {
       );
 
     new EventTrigger("Deploy Half and Stop Intaking")
-      .onTrue(IntakeFactory.intakeCommand(this)
+      .onTrue(IntakeFactory.deployHalfCommand(this)
       );
   }
 
@@ -317,9 +334,9 @@ public class RobotContainer {
   }
 
   private void configureDriverBindings() {
-    controlboard
-      .resetGyro()
-      .onTrue(Commands.runOnce(() -> drivetrain.seedFieldCentric()));
+    // controlboard
+    //   .resetGyro()
+    //   .onTrue(Commands.runOnce(() -> drivetrain.seedFieldCentric()));
 
     controlboard
       .deployIntake()
@@ -342,7 +359,7 @@ public class RobotContainer {
             )
           ),
           Commands.runEnd(
-            () -> shooter.runVoltage(shooter.getPreset().getData().getVoltageSetpoint()), 
+            () -> shooter.runVelocity(shooter.getPreset().getData().getFlywheelSpeedRPM()), 
             () -> shooter.stop(),
             shooter
           ),
@@ -358,6 +375,22 @@ public class RobotContainer {
           )
         )
       );
+
+      controlboard
+        .exhaust()
+        .whileTrue(Commands.parallel(
+          Commands.runEnd(
+              () -> indexer.setGoal(IndexerGoal.EXHAUST), 
+              () -> indexer.setGoal(IndexerGoal.STOP), 
+              indexer
+          ),
+          Commands.runEnd(
+              () -> tower.setTowerGoal(TowerGoal.FEED), 
+              () -> tower.setTowerGoal(TowerGoal.STOP), 
+              tower
+          ),
+          IntakeFactory.ejectCommand(this)
+        ));
 
       controlboard
         .automaticallyAim()
@@ -379,12 +412,21 @@ public class RobotContainer {
   }
 
   public void updateOnboardAlerts() {
-    primaryDisconnected.set(!DriverStation.isJoystickConnected(controlboard.getPrimaryHID().getPort()));
-    secondaryDisconnected.set(!DriverStation.isJoystickConnected(controlboard.getSecondaryHID().getPort()));
+    SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
+
+    SmartDashboard.putString("Shifts/Remaining Shift Time", String.format("%.1f", Math.max(HubShiftUtility.getShiftedShiftInfo().remainingTime(), 0.0)));
+    SmartDashboard.putBoolean("Shifts/Shift Active", HubShiftUtility.getShiftedShiftInfo().active());
+    SmartDashboard.putString("Shifts/Game State", HubShiftUtility.getShiftedShiftInfo().currentShift().toString());
+    SmartDashboard.putBoolean("Shifts/Active First?", DriverStation.getAlliance().orElse(Alliance.Blue) == HubShiftUtility.getFirstActiveAlliance());
+
+    driverControllerDisconnected.set(!DriverStation.isJoystickConnected(controlboard.getPrimaryHID().getPort()));
+    operatorControllerDisconnected.set(!DriverStation.isJoystickConnected(controlboard.getSecondaryHID().getPort()));
+    primaryButtonBoardDisconnected.set(!primaryButtonBoard.isConnected());
+    secondaryButtonBoardDisconnected.set(!secondaryButtonBoard.isConnected());
   }
 
   private void configureOperatorBindings() {
-   controlboard
+    controlboard
       .selectCloseShootingPreset()
       .onTrue(Commands.runOnce(() -> shooter.setShootingPreset(SelectedShootingPreset.CLOSE)));
 
@@ -395,6 +437,22 @@ public class RobotContainer {
     controlboard
       .selectFarShootingPreset()
       .onTrue(Commands.runOnce(() -> shooter.setShootingPreset(SelectedShootingPreset.FAR)));
+
+    controlboard
+      .deployClimber()
+      .whileTrue(Commands.runEnd(
+        () -> elevator.runVoltage(3), 
+        () -> elevator.runVoltage(0), 
+        elevator
+      ));
+
+    controlboard
+      .stowClimber()
+      .whileTrue(Commands.runEnd(
+        () -> elevator.runVoltage(-3), 
+        () -> elevator.runVoltage(0), 
+        elevator
+      ));
   }
 
   public Command getAutonomousCommand() {
