@@ -30,47 +30,11 @@ public class OperatorButtonBoard {
         return operatorHID.getRawButton(index + 8);
     }
 
-    public Trigger a() {
-        return new Trigger(() -> getSPSTSwitch(11));
+    public Trigger spstSwitch(int index) {
+        return new Trigger(() -> getSPSTSwitch(index));
     }
 
-    public Trigger b() {
-        return new Trigger(() -> getSPSTSwitch(10));
-    }
-
-    public Trigger c() {
-        return new Trigger(() -> getSPSTSwitch(9));
-    }
-
-    public Trigger d() {
-        return new Trigger(() -> getSPSTSwitch(8));
-    }
-
-    public Trigger e() {
-        return new Trigger(() -> getSPSTSwitch(7));
-    }
-
-    public Trigger z() {
-        return new Trigger(() -> getMomentarySwitch(5));
-    }
-
-    public Trigger y() {
-        return new Trigger(() -> getMomentarySwitch(4));
-    }
-
-    public Trigger w() {
-        return new Trigger(() -> getMomentarySwitch(3));
-    }
-
-    public Trigger v() {
-        return new Trigger(() -> getMomentarySwitch(2));
-    }
-
-    public Trigger u() {
-        return new Trigger(() -> getMomentarySwitch(1));
-    }
-
-    public Trigger t() {
-        return new Trigger(() -> getMomentarySwitch(0));
+    public Trigger momentarySwitch(int index) {
+        return new Trigger(() -> getMomentarySwitch(index));
     }
 }
