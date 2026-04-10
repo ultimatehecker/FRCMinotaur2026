@@ -47,22 +47,28 @@ public class Shooter extends SubsystemBase {
     private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Shooter/ReadyDebounceSeconds", 0.10);
 
     private static final ShootingPreset closePreset = new ShootingPreset(
-    new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/HoodAngleDegrees", 12), 
-    new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/FlywheelSpeedRPM", 2250), 
-    new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/VoltageSetpoint", 5.5) 
-  );
+        new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/HoodAngleDegrees", 12), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/FlywheelSpeedRPM", 1800), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/VoltageSetpoint", 5.5) 
+    );
 
-  private static final ShootingPreset mediumPreset = new ShootingPreset(
-    new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/HoodAngleDegrees", 20), 
-    new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/FlywheelSpeedRPM", 2700), 
-    new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/VoltageSetpoint", 6.5) 
-  );
+    private static final ShootingPreset closeMediumPreset = new ShootingPreset(
+        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/HoodAngleDegrees", 18), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/FlywheelSpeedRPM", 2000), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/VoltageSetpoint", 6.5) 
+    );
 
-  private static final ShootingPreset farPreset = new ShootingPreset(
-    new LoggedTunableNumber("Shooter/ShootingPreset/FarPreset/HoodAngleDegrees", 27), 
-    new LoggedTunableNumber("Shooter/ShootingPreset/FarPreset/FlywheelSpeedRPM", 3300), 
-    new LoggedTunableNumber("Shooter/ShootingPreset/FarPreset/VoltageSetpoint", 7.5) 
-  );
+    private static final ShootingPreset mediumPreset = new ShootingPreset(
+        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/HoodAngleDegrees", 31.5), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/FlywheelSpeedRPM", 2250), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/VoltageSetpoint", 6.5) 
+    );
+
+    private static final ShootingPreset farPreset = new ShootingPreset(
+        new LoggedTunableNumber("Shooter/ShootingPreset/FarPreset/HoodAngleDegrees", 27), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/FarPreset/FlywheelSpeedRPM", 3300), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/FarPreset/VoltageSetpoint", 7.5) 
+    );
 
     public enum ShooterGoal {
         IDLE,
@@ -81,6 +87,7 @@ public class Shooter extends SubsystemBase {
 
     public enum SelectedShootingPreset {
         CLOSE(closePreset),
+        CLOSE_MEDIUM(closeMediumPreset),
         MEDIUM(mediumPreset),
         FAR(farPreset);
 
@@ -137,8 +144,8 @@ public class Shooter extends SubsystemBase {
     @Getter private ShooterState state = ShooterState.IDLE;
     @Getter private SelectedShootingPreset preset = SelectedShootingPreset.CLOSE;
 
-    @Getter private double voltageSetpoint = 0.0;
-    @Getter private double velocitySetpoint = 0.0;
+    @Getter @AutoLogOutput(key = "Shooter/VoltageSetpoint") private double voltageSetpoint = 0.0;
+    @Getter @AutoLogOutput(key = "Shooter/VelocitySetpointRPM") private double velocitySetpoint = 0.0;
 
     public Shooter(ShooterIO io) {
         this.io = io;
@@ -172,6 +179,10 @@ public class Shooter extends SubsystemBase {
 
         state = handleStateTransition();
         applyState();
+
+        Logger.recordOutput("Shooter/Goal", goal.toString());
+        Logger.recordOutput("Shooter/State", state.toString());
+        Logger.recordOutput("Shooter/ShootingPreset", preset.toString());
 
         LoggedTracer.record("ShooterPeriodic");
     }

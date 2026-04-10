@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Celsius;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Rotations;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.minolib.phoenix.PhoenixUtility.simpleTryUntilOk;
 
@@ -24,6 +25,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
@@ -74,6 +76,7 @@ public class HoodIOHardware implements HoodIO {
             );
 
         simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.25));
+        simpleTryUntilOk(5, () -> motor.setPosition(HoodConstants.kHoodMinimumPosition.in(Rotations)));
 
         position = motor.getPosition();
         velocity = motor.getVelocity();
@@ -131,7 +134,7 @@ public class HoodIOHardware implements HoodIO {
     public void setPosition(double positionRadians, double feedforward) {
         motor.setControl(
             positionTorqueCurrentRequest
-                .withPosition(positionRadians)
+                .withPosition(Units.radiansToRotations(positionRadians))
                 .withFeedForward(feedforward)
         );
     }

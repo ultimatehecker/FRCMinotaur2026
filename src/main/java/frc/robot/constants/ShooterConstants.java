@@ -17,11 +17,11 @@ public class ShooterConstants {
     public static final MinoCANDevice kSecondaryShooterMotor = new MinoCANDevice(20, GlobalConstants.kRioBus);
     public static final MinoCANDevice kThirdShooterMotor = new MinoCANDevice(21, GlobalConstants.kRioBus);
 
-    public static final double kP = 0.01;
+    public static final double kP = 0.00105;
     public static final double kI = 0.0;
     public static final double kD = 0.0;
-    public static final double kS = 0.0;
-    public static final double kV = 0.0;
+    public static final double kS = 0.35;
+    public static final double kV = 0.00262;
     public static final double kA = 0.0;
 
     public static final boolean kPrimaryShooterMotorInverted = true;
