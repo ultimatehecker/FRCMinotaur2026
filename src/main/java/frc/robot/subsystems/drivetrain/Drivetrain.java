@@ -27,6 +27,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Force;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
@@ -112,11 +114,14 @@ public class Drivetrain extends SubsystemBase {
         SWERVE_STEER
     }
 
+    private final Field2d driveVisualization = new Field2d();
+
     public Drivetrain(DrivetrainIO io, RobotState robotState) {
         this.io = io;
         this.robotState = robotState;
-
+        
         configurePathPlanner();
+        SmartDashboard.putData("Drive Visualization", driveVisualization);
     }
 
     @Override
@@ -138,6 +143,7 @@ public class Drivetrain extends SubsystemBase {
             });
         }
 
+        driveVisualization.setRobotPose(robotState.getLatestFieldToRobot().getValue());
         LoggedTracer.record("DrivetrainPeriodic");
     }
 

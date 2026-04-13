@@ -24,8 +24,8 @@ import frc.minolib.hardware.MinoCANDevice;
 public class IntakeConstants {
     public static final AngularVelocity kRollerMaximumRotationalVelocity = RadiansPerSecond.of(4.2);
     public static final AngularAcceleration kRollerMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6.0);
-    public static final AngularVelocity kPivotMaximumRotationalVelocity = RadiansPerSecond.of(4.5 * Math.PI);
-    public static final AngularAcceleration kPivotMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6 * Math.PI);
+    public static final AngularVelocity kPivotMaximumRotationalVelocity = RadiansPerSecond.of(17);
+    public static final AngularAcceleration kPivotMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(100);
 
     public static final MinoCANDevice kPivotMotor = new MinoCANDevice(14, GlobalConstants.kRioBus);
     public static final MinoCANDevice kRollerMotor = new MinoCANDevice(15, GlobalConstants.kRioBus);
@@ -45,11 +45,11 @@ public class IntakeConstants {
     public static final MomentOfInertia kRollerMOI = MomentOfInertia.ofBaseUnits(0.0009, KilogramSquareMeters);
     public static final MomentOfInertia kPivotMOI = MomentOfInertia.ofBaseUnits(0.02, KilogramSquareMeters);
 
-    public static final double pivotkP = 150;
-    public static final double pivotkD = 5.0;
-    public static final double pivotkS = 0.085;
+    public static final double pivotkP = 175;
+    public static final double pivotkD = 15.0;
+    public static final double pivotkS = 0.11;
     public static final double pivotkV = 0.0;
-    public static final double pivotkG = 0.255;
+    public static final double pivotkG = 0.35;
     public static final double pivotkA = 0.0;
 
     public static final boolean kPivotMotorInverted = false;

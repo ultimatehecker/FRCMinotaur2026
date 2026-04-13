@@ -47,7 +47,7 @@ public class Shooter extends SubsystemBase {
     private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Shooter/ReadyDebounceSeconds", 0.10);
 
     private static final ShootingPreset closePreset = new ShootingPreset(
-        new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/HoodAngleDegrees", 12), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/HoodAngleDegrees", 20), 
         new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/FlywheelSpeedRPM", 1800), 
         new LoggedTunableNumber("Shooter/ShootingPreset/ClosePreset/VoltageSetpoint", 5.5) 
     );
@@ -59,8 +59,8 @@ public class Shooter extends SubsystemBase {
     );
 
     private static final ShootingPreset mediumPreset = new ShootingPreset(
-        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/HoodAngleDegrees", 31.5), 
-        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/FlywheelSpeedRPM", 2250), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/HoodAngleDegrees", 23), 
+        new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/FlywheelSpeedRPM", 2200), 
         new LoggedTunableNumber("Shooter/ShootingPreset/MediumPreset/VoltageSetpoint", 6.5) 
     );
 
