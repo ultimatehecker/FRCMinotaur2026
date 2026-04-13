@@ -17,7 +17,7 @@ public class ShooterConstants {
     public static final MinoCANDevice kSecondaryShooterMotor = new MinoCANDevice(20, GlobalConstants.kRioBus);
     public static final MinoCANDevice kThirdShooterMotor = new MinoCANDevice(21, GlobalConstants.kRioBus);
 
-    public static final double kP = 0.00105;
+    public static final double kP = 0.0012;
     public static final double kI = 0.0;
     public static final double kD = 0.0;
     public static final double kS = 0.35;
@@ -29,8 +29,8 @@ public class ShooterConstants {
     public static final double kShooterMotorReduction = (24.0 / 18.0);
     public static final DCMotor kShooterSimulatedGearbox = DCMotor.getKrakenX60Foc(4);
 
-    public static final Current kShooterMotorSupplyLimit = Amps.of(70);
-    public static final Current kShooterMotorStatorLimit = Amps.of(80);
+    public static final Current kShooterMotorSupplyLimit = Amps.of(80);
+    public static final Current kShooterMotorStatorLimit = Amps.of(100);
 
     public static final MomentOfInertia kShooterMOI = KilogramSquareMeters.of(0.1);
 

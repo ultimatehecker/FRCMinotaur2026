@@ -11,6 +11,10 @@ public class IntakeFactory {
         return Commands.startEnd(() -> robotContainer.getIntake().setGoal(IntakeGoal.INTAKE), () -> robotContainer.getIntake().setGoal(IntakeGoal.DEPLOY_HALF));
     }
 
+    public static Command intakeCommandUnblocking(RobotContainer robotContainer) {
+        return Commands.runOnce(() -> robotContainer.getIntake().setGoal(IntakeGoal.INTAKE));
+    }
+
     public static Command stowCommand(RobotContainer robotContainer) {
         return Commands.runOnce(() -> robotContainer.getIntake().setGoal(IntakeGoal.STOW));
     }

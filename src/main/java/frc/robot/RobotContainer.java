@@ -312,12 +312,16 @@ public class RobotContainer {
     );
 
     new EventTrigger("Deploy and Intake")
-      .onTrue(IntakeFactory.intakeCommand(this)
-      );
+      .onTrue(IntakeFactory.intakeCommandUnblocking(this)
+    );
 
     new EventTrigger("Deploy Half and Stop Intaking")
       .onTrue(IntakeFactory.deployHalfCommand(this)
-      );
+    );
+
+    new EventTrigger("Stow and Stop Intaking")
+      .onTrue(IntakeFactory.stowCommand(this)
+    );
   }
 
   private void configureDefaultCommands() {
@@ -338,7 +342,9 @@ public class RobotContainer {
 
     controlboard
       .deployIntake()
-      .whileTrue(IntakeFactory.intakeCommand(this))
+      .whileTrue(
+        IntakeFactory.intakeCommand(this)
+      )
       .onFalse(IntakeFactory.deployHalfCommand(this));
 
     controlboard
@@ -350,11 +356,13 @@ public class RobotContainer {
         Commands.parallel(
           Commands.sequence(
             Commands.waitSeconds(1),
-            Commands.runEnd(
-              () -> tower.setTowerGoal(TowerGoal.FEED), 
-              () -> tower.setTowerGoal(TowerGoal.STOP), 
-              tower
-            )
+            Commands.runOnce(
+              () -> tower.setTowerGoal(TowerGoal.FEED)
+            ),
+            Commands.waitSeconds(1),
+            IntakeFactory.deployCommand(this),
+            Commands.waitSeconds(0.35),
+            IntakeFactory.stowCommand(this)
           ),
           Commands.runEnd(
             () -> shooter.runVelocity(shooter.getPreset().getData().getFlywheelSpeedRPM()), 
@@ -371,7 +379,7 @@ public class RobotContainer {
             () -> hood.setAngle(12), 
             hood
           )
-        )
+        ).finallyDo(() -> tower.setTowerGoal(TowerGoal.STOP))
       );
 
       controlboard
@@ -383,18 +391,12 @@ public class RobotContainer {
               indexer
           ),
           Commands.runEnd(
-              () -> tower.setTowerGoal(TowerGoal.FEED), 
+              () -> tower.setTowerGoal(TowerGoal.EXHAUST), 
               () -> tower.setTowerGoal(TowerGoal.STOP), 
               tower
           ),
           IntakeFactory.ejectCommand(this)
         ));
-
-      controlboard
-        .automaticallyAim()
-        .whileTrue(
-          DrivetrainFactory.autoAim(drivetrain, robotState, () -> shooter.getHubCenter(robotState.isRedAlliance()), () -> 0, () -> 0)
-        );
 
       controlboard
         .automaticallyHang()
