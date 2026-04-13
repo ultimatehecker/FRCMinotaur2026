@@ -33,11 +33,11 @@
     {
       "anchor": {
         "x": 2.7449,
-        "y": 5.8767
+        "y": 6.3
       },
       "prevControl": {
         "x": 2.1310000000000002,
-        "y": 6.675744444444445
+        "y": 7.099044444444445
       },
       "nextControl": null,
       "isLocked": false,
@@ -66,7 +66,7 @@
   "eventMarkers": [
     {
       "name": "Deploy Half and Stop Intaking",
-      "waypointRelativePos": 0.3554555680539887,
+      "waypointRelativePos": 0,
       "endWaypointRelativePos": null,
       "command": null
     }
@@ -86,7 +86,7 @@
   "reversed": false,
   "folder": "Left",
   "idealStartingState": {
-    "velocity": 0,
+    "velocity": 3.0,
     "rotation": 122.85572195043301
   },
   "useDefaultConstraints": true

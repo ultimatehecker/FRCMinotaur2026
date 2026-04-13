@@ -1,0 +1,49 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RightSingleSwipe"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RightShoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooting OL Sequence Medium"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RightSecondSwipe"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "RightSecondShoot"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooting OL Sequence Medium"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

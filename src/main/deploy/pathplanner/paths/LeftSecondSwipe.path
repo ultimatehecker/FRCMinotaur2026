@@ -4,12 +4,12 @@
     {
       "anchor": {
         "x": 2.7449,
-        "y": 5.8767
+        "y": 6.3
       },
       "prevControl": null,
       "nextControl": {
         "x": 2.369971469329529,
-        "y": 7.496091298145506
+        "y": 7.919391298145507
       },
       "isLocked": false,
       "linkedName": "LeftShoot"
@@ -20,40 +20,40 @@
         "y": 7.4572753209700435
       },
       "prevControl": {
-        "x": 4.017472868561719,
-        "y": 7.450305872988669
+        "x": 4.017499522920172,
+        "y": 7.44852185390936
       },
       "nextControl": {
-        "x": 6.49740370898716,
-        "y": 7.48315263908702
+        "x": 7.591658712037853,
+        "y": 7.507982641945423
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 5.811654778887304,
-        "y": 4.6495863052781745
+        "x": 5.946985172755283,
+        "y": 5.48948847381162
       },
       "prevControl": {
-        "x": 5.736688736487515,
-        "y": 6.330388837608566
+        "x": 5.872019130355494,
+        "y": 7.170291006142011
       },
       "nextControl": {
-        "x": 5.85994068801898,
-        "y": 3.566975088967972
+        "x": 5.995271081886959,
+        "y": 4.406877257501417
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 6.730299572039942,
-        "y": 6.305734664764623
+        "x": 7.513189439370599,
+        "y": 6.3
       },
       "prevControl": {
-        "x": 6.752953736654805,
-        "y": 2.716998813760379
+        "x": 8.065031772667254,
+        "y": 4.2148929907570425
       },
       "nextControl": null,
       "isLocked": false,
@@ -74,7 +74,7 @@
       "rotationDegrees": 0.0
     },
     {
-      "waypointRelativePos": 2.6376554174067453,
+      "waypointRelativePos": 2.864662936681222,
       "rotationDegrees": 78.56245514737218
     }
   ],
@@ -82,9 +82,15 @@
   "pointTowardsZones": [],
   "eventMarkers": [
     {
-      "name": "Deploy and Intake",
-      "waypointRelativePos": 1.0731158605174411,
+      "name": "Stow and Stop Intaking",
+      "waypointRelativePos": 0,
       "endWaypointRelativePos": null,
+      "command": null
+    },
+    {
+      "name": "Deploy and Intake",
+      "waypointRelativePos": 0.8104625207641195,
+      "endWaypointRelativePos": 2.831421303986711,
       "command": null
     }
   ],
@@ -97,7 +103,7 @@
     "unlimited": false
   },
   "goalEndState": {
-    "velocity": 0,
+    "velocity": 3.0,
     "rotation": 103.24051991518687
   },
   "reversed": false,
