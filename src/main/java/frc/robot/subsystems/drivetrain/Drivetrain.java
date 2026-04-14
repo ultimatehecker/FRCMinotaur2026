@@ -11,27 +11,32 @@ import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.SignalLogger;
+import com.ctre.phoenix6.controls.CoastOut;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveRequest.ApplyRobotSpeeds;
-import com.google.flatbuffers.Constants;
+
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.units.measure.Force;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.minolib.swerve.pathplanner.PathPlannerLogging;
-import frc.minolib.utilities.SubsystemDataProcessor;
-import frc.minolib.wpilib.RobotTime;
+
 import frc.robot.RobotState;
 import frc.robot.constants.DrivetrainConstants;
 
@@ -41,13 +46,23 @@ public class Drivetrain extends SubsystemBase {
 
     private DrivetrainIOInputsAutoLogged inputs = new DrivetrainIOInputsAutoLogged();
 
+    private ModuleIOInputsAutoLogged frontLeftInputs = new ModuleIOInputsAutoLogged();
+    private ModuleIOInputsAutoLogged frontRightInputs = new ModuleIOInputsAutoLogged();
+    private ModuleIOInputsAutoLogged backLeftInputs = new ModuleIOInputsAutoLogged();
+    private ModuleIOInputsAutoLogged backRightInputs = new ModuleIOInputsAutoLogged();
+
     private final Object moduleIOLock = new Object();
+
     private RobotConfig robotConfig;
 
     private final SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();
     private final ApplyRobotSpeeds pathplannerRequest = new ApplyRobotSpeeds()
         .withDriveRequestType(SwerveModule.DriveRequestType.Velocity)
         .withDesaturateWheelSpeeds(true);
+
+    private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
+    private static final Rotation2d kRedAlliancePerspectiveRotation = Rotation2d.k180deg;
+    private boolean hasAppliedOperatorPerspective = false;
 
     private final SwerveRequest.SysIdSwerveTranslation translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
     private final SwerveRequest.SysIdSwerveRotation rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
@@ -99,30 +114,37 @@ public class Drivetrain extends SubsystemBase {
         SWERVE_STEER
     }
 
+    private final Field2d driveVisualization = new Field2d();
+
     public Drivetrain(DrivetrainIO io, RobotState robotState) {
         this.io = io;
         this.robotState = robotState;
-
+        
         configurePathPlanner();
+        SmartDashboard.putData("Drive Visualization", driveVisualization);
     }
 
     @Override
     public void periodic() {
-        double timestamp = RobotTime.getTimestampSeconds();
-        io.updateInputs(inputs);
-
+        io.updateDrivetrainInputs(inputs);
         Logger.processInputs("Drivetrain", inputs);
 
+        robotState.incrementIterationCount();
         if (DriverStation.isDisabled()) {
             configureStandardDevsForDisabled();
         } else {
             configureStandardDevsForEnabled();
         }
 
-        Logger.recordOutput("Drivetrain/LatencyPeriodicSeconds", RobotTime.getTimestampSeconds() - timestamp);
-        Logger.recordOutput("Drivetrain/CurrentCommand", (getCurrentCommand() == null) ? "Default" : getCurrentCommand().getName());
+        if (!hasAppliedOperatorPerspective || DriverStation.isDisabled()) {
+            DriverStation.getAlliance().ifPresent(allianceColor -> {
+                io.setOperatorPerspectiveForward(allianceColor == Alliance.Red ? kRedAlliancePerspectiveRotation : kBlueAlliancePerspectiveRotation);
+                hasAppliedOperatorPerspective = true;
+            });
+        }
 
-        LoggedTracer.record("DrivetrainPeriodicMS");
+        driveVisualization.setRobotPose(robotState.getLatestFieldToRobot().getValue());
+        LoggedTracer.record("DrivetrainPeriodic");
     }
 
     private void configurePathPlanner() {
@@ -199,10 +221,6 @@ public class Drivetrain extends SubsystemBase {
 
     public void holdXStance() {
         setControl(brakeRequest);
-    }
-
-    public void seedFieldCentric() {
-        io.seedFieldCentric();
     }
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier) {

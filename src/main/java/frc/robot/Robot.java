@@ -16,37 +16,28 @@ import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
-import org.littletonrobotics.urcl.URCL;
 
 import com.ctre.phoenix6.SignalLogger;
-import com.google.flatbuffers.Constants;
 import com.pathplanner.lib.commands.PathfindingCommand;
 import com.pathplanner.lib.pathfinding.Pathfinding;
 
 import edu.wpi.first.hal.AllianceStationID;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.net.WebServer;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj.IterativeRobotBase;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.Watchdog;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
+
 import frc.minolib.advantagekit.LocalADStarAK;
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.hardware.MinoCANBus;
-import frc.robot.command_factories.DrivetrainFactory;
+import frc.minolib.io.BatteryIOInputsAutoLogged;
+import frc.minolib.utilities.BatteryLogger;
 import frc.robot.constants.BuildConstants;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.GlobalConstants.RobotType;
@@ -55,25 +46,23 @@ public class Robot extends LoggedRobot {
   private Command autonomousCommand;
   private final RobotContainer robotContainer;
 
-  private static final double loopOverrunWarningTimeout = 0.2;
-  private static final double canErrorTimeThreshold = 0.5; 
-  private static final double canivoreErrorTimeThreshold = 0.5;
-  private static final double lowBatteryVoltage = 11.8;
-  private static final double lowBatteryDisabledTime = 1.5;
-  private static final double lowBatteryMinCycleCount = 10;
-  private static int lowBatteryCycleCount = 0;
-
   private final Timer canInitialErrorTimer = new Timer();
   private final Timer canErrorTimer = new Timer();
   private final Timer canivoreErrorTimer = new Timer();
   private final Timer disabledTimer = new Timer();
+
   private MinoCANBus canivoreBus;
+  private MinoCANBus rioBus;
 
   private final Alert canErrorAlert = new Alert("CAN errors detected, robot may not be controllable.", AlertType.kError);
   private final Alert canivoreErrorAlert = new Alert("CANivore errors detected, robot may not be controllable.", AlertType.kError);
   private final Alert lowBatteryAlert = new Alert("Battery voltage is very low, consider turning off the robot or replacing the battery.", AlertType.kWarning);
-  private final Alert jitAlert = new Alert("Please wait to enable, JITing in progress.", AlertType.kWarning);
+  private final Alert jitAlert = new Alert("Please wait to enable, JITing in progress.", AlertType.kInfo);
+  private final Alert logReceiverQueueAlert = new Alert("Logging queue exceeded capacity, data will NOT be logged.", AlertType.kError);
   private final Alert noAutoSelectedAlert = new Alert("No auto selected: please select an auto", AlertType.kWarning);
+
+  public static final BatteryLogger batteryLogger = new BatteryLogger();
+  private final BatteryIOInputsAutoLogged batteryInputs = new BatteryIOInputsAutoLogged();
 
   public Robot() {
     Logger.recordMetadata("ProjectName", BuildConstants.MAVEN_NAME);
@@ -110,8 +99,9 @@ public class Robot extends LoggedRobot {
         break;
     }
 
+    SignalLogger.setPath("/media/sda1/");
+
     LiveWindow.disableAllTelemetry();
-    SignalLogger.enableAutoLogging(false); // might disable later
     Logger.start();
 
     Pathfinding.setPathfinder(new LocalADStarAK());
@@ -142,22 +132,35 @@ public class Robot extends LoggedRobot {
     disabledTimer.restart();
 
     // Configure brownout voltage
-    RobotController.setBrownoutVoltage(6.0);
-
+    RobotController.setBrownoutVoltage(6.2);
     robotContainer = new RobotContainer();
+
     canivoreBus = GlobalConstants.kCANivoreBus;
+    rioBus = GlobalConstants.kRioBus;
 
     CommandScheduler.getInstance().schedule(PathfindingCommand.warmupCommand());
-
-    //robotContainer = new RobotContainer();
   }
 
   @Override
   public void robotPeriodic() {
     LoggedTracer.reset();
 
+    batteryInputs.batteryVoltage = RobotController.getBatteryVoltage();
+    batteryInputs.rioCurrent = RobotController.getInputCurrent();
+    Logger.processInputs("BatteryLogger", batteryInputs);
+
+    batteryLogger.setBatteryVoltage(batteryInputs.batteryVoltage);
+    batteryLogger.setRioCurrent(batteryInputs.rioCurrent);
+    LoggedTracer.record("BatteryLogger/Periodic");
+
+    if (RobotController.getBatteryVoltage() <= GlobalConstants.kLowBatteryVoltage && disabledTimer.hasElapsed(GlobalConstants.kLowBatteryDisabledTime)) {
+      lowBatteryAlert.set(true);
+    }
+
     CommandScheduler.getInstance().run();
     LoggedTracer.record("Commands");
+
+    logReceiverQueueAlert.set(Logger.getReceiverQueueFault());
 
     var canStatus = RobotController.getCANStatus();
     Logger.recordOutput("CANStatus/OffCount", canStatus.busOffCount);
@@ -169,17 +172,38 @@ public class Robot extends LoggedRobot {
       canErrorTimer.restart();
     }
 
-    canErrorAlert.set(!canErrorTimer.hasElapsed(GlobalConstants.kCANErrorTimeThreshold) && canInitialErrorTimer.hasElapsed(GlobalConstants.kCANErrorTimeThreshold));
-    canivoreBus.updateInputs();
+    canErrorAlert.set(
+      !canErrorTimer.hasElapsed(GlobalConstants.kCANErrorTimeThreshold) 
+        && canInitialErrorTimer.hasElapsed(GlobalConstants.kCANErrorTimeThreshold)
+    );
 
-    lowBatteryCycleCount += 1;
+    if (GlobalConstants.getMode() == GlobalConstants.Mode.REAL) {
+      var canivoreStatus = this.canivoreBus.getParent().getStatus();
+      Logger.recordOutput("CANivoreStatus/Status", canivoreStatus.Status.getName());
+      Logger.recordOutput("CANivoreStatus/Utilization", canivoreStatus.BusUtilization);
+      Logger.recordOutput("CANivoreStatus/OffCount", canivoreStatus.BusOffCount);
+      Logger.recordOutput("CANivoreStatus/TxFullCount", canivoreStatus.TxFullCount);
+      Logger.recordOutput("CANivoreStatus/ReceiveErrorCount", canivoreStatus.REC);
+      Logger.recordOutput("CANivoreStatus/TransmitErrorCount", canivoreStatus.TEC);
+
+      if (!canivoreStatus.Status.isOK() || canivoreStatus.REC > 0 || canivoreStatus.TEC > 0) {
+        canivoreErrorTimer.restart();
+      }
+
+      canivoreErrorAlert.set(
+        !canivoreErrorTimer.hasElapsed(GlobalConstants.kCANivoreTimeThreshold)
+          && canInitialErrorTimer.hasElapsed(GlobalConstants.kCANErrorTimeThreshold)
+      );
+    }
+
+    canivoreBus.updateInputs();
+    rioBus.updateInputs();
+
     if (DriverStation.isEnabled()) {
       disabledTimer.reset();
     }
 
-    if (RobotController.getBatteryVoltage() <= lowBatteryVoltage && disabledTimer.hasElapsed(lowBatteryDisabledTime) && lowBatteryCycleCount >= lowBatteryMinCycleCount) {
-      lowBatteryAlert.set(true);
-    }
+    robotContainer.updateOnboardAlerts();
 
     // JIT alert
     jitAlert.set(isJITing());
@@ -191,7 +215,13 @@ public class Robot extends LoggedRobot {
   public void disabledInit() {}
 
   @Override
-  public void disabledPeriodic() {}
+  public void disabledPeriodic() {
+    if (robotContainer.getAutonomousCommand().getName().equals("Do Nothing")) {
+      noAutoSelectedAlert.set(true);
+    } else {
+      noAutoSelectedAlert.set(false);
+    }
+  }
 
   @Override
   public void disabledExit() {}

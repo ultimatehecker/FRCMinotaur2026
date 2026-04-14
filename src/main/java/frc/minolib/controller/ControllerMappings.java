@@ -24,10 +24,10 @@ public class ControllerMappings {
         Map<String, Integer> xboxAxes = new HashMap<>();
         xboxAxes.put("LeftX", 0);
         xboxAxes.put("LeftY", 1);
-        xboxAxes.put("RightX", 4);
-        xboxAxes.put("RightY",5);
-        xboxAxes.put("RightTrigger", 3);
-        xboxAxes.put("LeftTrigger", 2);
+        xboxAxes.put("RightX", 2);
+        xboxAxes.put("RightY",3);
+        xboxAxes.put("RightTrigger", 5);
+        xboxAxes.put("LeftTrigger", 4);
 
         XBOX_MAPPING = new ControllerMapping(xboxButtons, xboxAxes);
 

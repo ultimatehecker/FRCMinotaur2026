@@ -25,7 +25,6 @@ import frc.robot.constants.DrivetrainConstants;
 import frc.robot.constants.GlobalConstants;
 
 public class DrivetrainIOSimulation extends DrivetrainIOHardware {
-    private static final double kSimulationLoopPeriod = 0.005; // 5 ms
     private Notifier simulationNotifier = null;
     private double lastSimulationTime;
 
@@ -49,8 +48,8 @@ public class DrivetrainIOSimulation extends DrivetrainIOHardware {
     }
 
     @Override
-    public void updateInputs(DrivetrainIOInputs inputs) {
-        super.updateInputs(inputs);
+    public void updateDrivetrainInputs(DrivetrainIOInputs inputs) {
+        super.updateDrivetrainInputs(inputs);
 
         var pose = getSimulatedPose();
         if (pose != null) {
@@ -63,7 +62,7 @@ public class DrivetrainIOSimulation extends DrivetrainIOHardware {
     public void updateSimulationState() {
         if(GlobalConstants.kUseMapleSim) {
             simulatedSwerveDrivetrain = new MapleSimulatedSwerveDrivetrain(
-                Seconds.of(kSimulationLoopPeriod), 
+                Seconds.of(GlobalConstants.kLoopPeriodSeconds), 
                 DrivetrainConstants.kRobotMassKilograms, 
                 Inches.of(31), 
                 Inches.of(31), 
@@ -90,7 +89,7 @@ public class DrivetrainIOSimulation extends DrivetrainIOHardware {
             });
         }
 
-        simulationNotifier.startPeriodic(kSimulationLoopPeriod);
+        simulationNotifier.startPeriodic(GlobalConstants.kLoopPeriodSeconds);
     }
 
     @Override
@@ -103,11 +102,6 @@ public class DrivetrainIOSimulation extends DrivetrainIOHardware {
         }
         
         super.resetOdometry(pose);
-    }
-
-    @Override
-    public void seedFieldCentric() {
-
     }
 
     public Pose2d getSimulatedPose() {

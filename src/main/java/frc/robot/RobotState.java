@@ -173,6 +173,10 @@ public class RobotState {
         return fieldToRobot.exp(new Twist2d(dt.vxMetersPerSecond, dt.vyMetersPerSecond, dt.omegaRadiansPerSecond));
     }
 
+    public Optional<Pose2d> getFieldToRobot(double timestamp) {
+        return fieldToRobot.getSample(timestamp);
+    }
+
     public ChassisSpeeds getLatestMeasuredRobotRelativeChassisSpeeds() {
         return measuredRobotRelativeChassisSpeeds.get();
     }
@@ -203,7 +207,7 @@ public class RobotState {
     private Optional<Double> getMaxAbsoluteValueInRange(ConcurrentTimeInterpolatableBuffer<Double> buffer, double minTime, double maxTime) {
         var submap = buffer.getInternalBuffer().subMap(minTime, maxTime).values();
         var max = submap.stream().max(Double::compare);
-        var min = submap.stream().max(Double::compare);
+        var min = submap.stream().min(Double::compare);
 
         if(max.isEmpty() || min.isEmpty()) {
             return Optional.empty();
@@ -314,7 +318,11 @@ public class RobotState {
         return intakeRollerAcceleration.get();
     }
 
-    private InterpolatingTreeMap shooterLUT;
-    private InterpolatingTreeMap hoodLUT;
-    private InterpolatingTreeMap tofLUT;
+    //private final InterpolatingTreeMap shooterHubLUT;
+    //private final InterpolatingTreeMap hoodHubLUT;
+    //private final InterpolatingTreeMap tofHubLUT;
+
+    //private final InterpolatingTreeMap shooterPassingLUT;
+    //private final InterpolatingTreeMap hoodPassingLUT;
+    //private final InterpolatingTreeMap tofPassingLUT;
 }

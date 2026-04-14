@@ -1,0 +1,31 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "NOP Killcode Right P1 "
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "NOP Killcode Right P2"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "Shooting OL Sequence Close"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": null,
+  "choreoAuto": false
+}

@@ -4,9 +4,10 @@ package frc.minolib.hardware;
 import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.CANBus.CANBusStatus;
 
+import edu.wpi.first.math.filter.Debouncer;
+import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
-import edu.wpi.first.wpilibj.Timer;
 import frc.minolib.io.CANBusInputsAutoLogged;
 import frc.robot.constants.GlobalConstants;
 
@@ -52,7 +53,7 @@ public class MinoCANBus {
 
   private final CANBusInputsAutoLogged inputs = new CANBusInputsAutoLogged();
 
-  private final Timer canivoreErrorTimer = new Timer();
+  private final Debouncer canivoreConnectedDebouncer = new Debouncer(GlobalConstants.kCANivoreTimeThreshold, DebounceType.kRising);
   private final Alert canivoreErrorAlert = new Alert("CANivore error detected, robot may not be controllable.", AlertType.kError);
 
   public MinoCANBus() {
@@ -77,11 +78,8 @@ public class MinoCANBus {
     inputs.isNetworkFD = canBus.isNetworkFD();
     Logger.processInputs(loggingName, inputs);
 
-    if (!status.Status.isOK() || status.REC > 0 || status.TEC > 0) {
-      canivoreErrorTimer.restart();
-    }
-
-    canivoreErrorAlert.set(!canivoreErrorTimer.hasElapsed(GlobalConstants.kCANivoreTimeThreshold));
+    boolean debouncedError = canivoreConnectedDebouncer.calculate(!status.Status.isOK() || status.REC > 0 || status.TEC > 0);
+    canivoreErrorAlert.set(debouncedError);
   }
 
   public CANBus getParent() {

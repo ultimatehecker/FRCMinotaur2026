@@ -1,0 +1,77 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 4.427218259629101,
+        "y": 7.5996005706134095
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 5.941041369472182,
+        "y": 7.392582025677603
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.32175463623395,
+        "y": 6.422182596291013
+      },
+      "prevControl": {
+        "x": 8.219103453325157,
+        "y": 6.973932704425759
+      },
+      "nextControl": {
+        "x": 8.425263908701854,
+        "y": 5.865820256776035
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 8.32175463623395,
+        "y": 4.222610556348074
+      },
+      "prevControl": {
+        "x": 8.619343794579173,
+        "y": 4.468445078459343
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "NOP attack"
+    }
+  ],
+  "rotationTargets": [],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Deploy and Intake",
+      "waypointRelativePos": 0.17547806524184775,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 5.4,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -122.19573393471318
+  },
+  "reversed": false,
+  "folder": "Left",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "useDefaultConstraints": false
+}

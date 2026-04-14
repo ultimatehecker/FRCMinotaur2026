@@ -1,0 +1,82 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 5.902,
+        "y": 2.372382310984309
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 6.730074179743224,
+        "y": 0.49627674750356654
+      },
+      "isLocked": false,
+      "linkedName": "Right2ndSwipe"
+    },
+    {
+      "anchor": {
+        "x": 4.49191155492154,
+        "y": 0.6127246790299581
+      },
+      "prevControl": {
+        "x": 5.7469614835948635,
+        "y": 0.5739087018544946
+      },
+      "nextControl": {
+        "x": 2.29396136472904,
+        "y": 0.6807025199637463
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.735,
+        "y": 1.8
+      },
+      "prevControl": {
+        "x": 1.9299015057853848,
+        "y": 1.4880604691710253
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "RightShoot"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 1,
+      "rotationDegrees": 0.0
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [],
+  "eventMarkers": [
+    {
+      "name": "Deploy Half and Stop Intaking",
+      "waypointRelativePos": 0.11248593925759254,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.5,
+    "maxAcceleration": 6.0,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": -125.00000000000001
+  },
+  "reversed": false,
+  "folder": "Right",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": -93.65222278030636
+  },
+  "useDefaultConstraints": true
+}

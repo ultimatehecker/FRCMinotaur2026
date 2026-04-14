@@ -9,6 +9,7 @@ import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.ctre.phoenix6.swerve.SwerveDrivetrain.SwerveDriveState;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
@@ -49,15 +50,15 @@ public interface DrivetrainIO {
         public double steerTemperatureCelsius = 0.0;
     }
 
-    public void updateInputs(DrivetrainIOInputs inputs);
+    public void updateDrivetrainInputs(DrivetrainIOInputs inputs);
 
-    public void logModules(SwerveDriveState swerveState);
+    public void updateModuleInputs(ModuleIOInputs inputs);
 
     public void setControl(SwerveRequest request);
 
     public Command applyRequest(Supplier<SwerveRequest> requestSupplier, Subsystem subsystemRequired);
 
-    public void seedFieldCentric();
+    public default void setOperatorPerspectiveForward(Rotation2d operatorPerspective) {}
 
     public void setBrakeMode(boolean enable);
 

@@ -1,5 +1,7 @@
 package frc.robot.constants;
 
+import static edu.wpi.first.units.Units.Amp;
+import static edu.wpi.first.units.Units.Amp;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
@@ -23,11 +25,11 @@ import frc.minolib.hardware.MinoCANDevice;
 public class IntakeConstants {
     public static final AngularVelocity kRollerMaximumRotationalVelocity = RadiansPerSecond.of(4.2);
     public static final AngularAcceleration kRollerMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6.0);
-    public static final AngularVelocity kPivotMaximumRotationalVelocity = RadiansPerSecond.of(3 * Math.PI);
-    public static final AngularAcceleration kPivotMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6 * Math.PI);
+    public static final AngularVelocity kPivotMaximumRotationalVelocity = RadiansPerSecond.of(17);
+    public static final AngularAcceleration kPivotMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(100);
 
     public static final MinoCANDevice kPivotMotor = new MinoCANDevice(14, GlobalConstants.kRioBus);
-    public static final MinoCANDevice kRollerMotor = new MinoCANDevice(15, GlobalConstants.kCANivoreBus);
+    public static final MinoCANDevice kRollerMotor = new MinoCANDevice(15, GlobalConstants.kRioBus);
     public static final MinoCANDevice kPivotAbsoluteEncoder = new MinoCANDevice(16, GlobalConstants.kRioBus);
 
     public static final AngularVelocity kRollerIdleThreshold = RadiansPerSecond.of(150);
@@ -44,42 +46,32 @@ public class IntakeConstants {
     public static final MomentOfInertia kRollerMOI = MomentOfInertia.ofBaseUnits(0.0009, KilogramSquareMeters);
     public static final MomentOfInertia kPivotMOI = MomentOfInertia.ofBaseUnits(0.02, KilogramSquareMeters);
 
-    public static final double pivotKp = 0.7;
-    public static final double pivotKd = 0.0;
-    public static final double pivotKs = 0.0;
-    public static final double pivotKv = 0.265;
-    public static final double pivotKCos = 0.415;
-    public static final double pivotKa = 0.0;
-    public static final double pivotSimulatedKp = 10.0;
-    public static final double pivotSimulatedKd = 0.01;
-    public static final double pivotSimulatedKs = 0.0;
-    public static final double pivotSimulatedKv = 0.0;
-    public static final double pivotSimulatedKCos = 0.0;
-    public static final double pivotSimulatedKa = 0.0;
+    public static final double pivotkP = 175;
+    public static final double pivotkD = 15.0;
+    public static final double pivotkS = 0.11;
+    public static final double pivotkV = 0.0;
+    public static final double pivotkG = 0.35;
+    public static final double pivotkA = 0.0;
 
     public static final boolean kPivotMotorInverted = false;
     public static final double kPivotMotorReduction = (25.0 / 1) * (32.0 / 16.0);
-    public static final Current kPivotMotorSupplyLimit = Amps.of(20);
-    public static final DCMotor kPivotSimulatedGearbox = DCMotor.getNEO(1);
+    public static final DCMotor kPivotSimulatedGearbox = DCMotor.getKrakenX60Foc(1);
 
-    public static final double kPivotMotorPositionConversionFactor = (1 / kPivotMotorReduction) * 2 * Math.PI;
-    public static final double kPivotMotorVelocityConversionFactor = 1 / kPivotMotorPositionConversionFactor;
+    public static final Current kPivotMotorStatorLimit = Amps.of(80);
+    public static final Current kPivotMotorSupplyLimit = Amps.of(40);
 
-    public static final double rollerKp = 0.0;
-    public static final double rollerKd = 0.0;
-    public static final double rollerKs = 0.0;
-    public static final double rollerKv = 0.0;
-    public static final double rollerKa = 0.0;
-    public static final double rollerSimulatedKp = 0.0;
-    public static final double rollerSimulatedKd = 0.0;
-    public static final double rollerSimulatedKs = 0.0;
-    public static final double rollerSimulatedKv = 0.0;
-    public static final double rollerSimulatedKa = 0.0;
+    public static final double rollerkP = 5.0;
+    public static final double rollerkD = 0.0;
+    public static final double rollerkS = 0.0;
+    public static final double rollerkV = 0.0;
+    public static final double rollerkA = 0.0;
 
     public static final boolean kRollerMotorInverted = true;
     public static final double kRollerMotorReduction = (24.0 / 12.0);
-    public static final Current kRollerMotorSupplyLimit = Amps.of(50);
-    public static final DCMotor kRollerSimulatedGearbox = DCMotor.getFalcon500(1);
+    public static final DCMotor kRollerSimulatedGearbox = DCMotor.getFalcon500Foc(1);
+
+    public static final Current kRollerMotorStatorLimit = Amps.of(90);
+    public static final Current kRollerMotorSupplyLimit = Amps.of(40);
 
     public static final double kRollerVelocityFilterTimeConstant = 0.1;
 }

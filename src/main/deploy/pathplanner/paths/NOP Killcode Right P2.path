@@ -1,0 +1,133 @@
+{
+  "version": "2025.0",
+  "waypoints": [
+    {
+      "anchor": {
+        "x": 8.322,
+        "y": 3.781644444444444
+      },
+      "prevControl": null,
+      "nextControl": {
+        "x": 7.188366666666667,
+        "y": 3.7718999999999996
+      },
+      "isLocked": false,
+      "linkedName": "NOP attack right"
+    },
+    {
+      "anchor": {
+        "x": 6.769,
+        "y": 2.2907444444444436
+      },
+      "prevControl": {
+        "x": 6.808333333333334,
+        "y": 2.8364333333333334
+      },
+      "nextControl": {
+        "x": 6.655232145741257,
+        "y": 0.7123922245700471
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 5.48308888888889,
+        "y": 0.6341888888888878
+      },
+      "prevControl": {
+        "x": 6.983733333333333,
+        "y": 0.702399999999999
+      },
+      "nextControl": {
+        "x": 5.233346753836315,
+        "y": 0.6228369736592253
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 2.959277777777778,
+        "y": 0.6341888888888878
+      },
+      "prevControl": {
+        "x": 3.7096,
+        "y": 0.6049555555555548
+      },
+      "nextControl": {
+        "x": 2.401376617063305,
+        "y": 0.655925297747893
+      },
+      "isLocked": false,
+      "linkedName": null
+    },
+    {
+      "anchor": {
+        "x": 3.1,
+        "y": 4.005960264900662
+      },
+      "prevControl": {
+        "x": 3.031788888888889,
+        "y": 3.635671376011773
+      },
+      "nextControl": null,
+      "isLocked": false,
+      "linkedName": "ActualCloseShootingPoint"
+    }
+  ],
+  "rotationTargets": [
+    {
+      "waypointRelativePos": 0.5,
+      "rotationDegrees": -102.48784815268925
+    },
+    {
+      "waypointRelativePos": 1.8556016597510117,
+      "rotationDegrees": 0.0
+    },
+    {
+      "waypointRelativePos": 2.9112033195020697,
+      "rotationDegrees": -0.33812403881164593
+    }
+  ],
+  "constraintZones": [],
+  "pointTowardsZones": [
+    {
+      "fieldPosition": {
+        "x": 4.625,
+        "y": 4.0
+      },
+      "rotationOffset": 180.0,
+      "minWaypointRelativePos": 3.434243176178655,
+      "maxWaypointRelativePos": 4.0,
+      "name": "Point Towards Zone"
+    }
+  ],
+  "eventMarkers": [
+    {
+      "name": "Deploy Half and Stop Intaking",
+      "waypointRelativePos": 1.0888638920134923,
+      "endWaypointRelativePos": null,
+      "command": null
+    }
+  ],
+  "globalConstraints": {
+    "maxVelocity": 4.0,
+    "maxAcceleration": 4.5,
+    "maxAngularVelocity": 540.0,
+    "maxAngularAcceleration": 720.0,
+    "nominalVoltage": 12.0,
+    "unlimited": false
+  },
+  "goalEndState": {
+    "velocity": 0,
+    "rotation": 180.0
+  },
+  "reversed": false,
+  "folder": "Right",
+  "idealStartingState": {
+    "velocity": 0,
+    "rotation": 112.42940619114685
+  },
+  "useDefaultConstraints": true
+}
