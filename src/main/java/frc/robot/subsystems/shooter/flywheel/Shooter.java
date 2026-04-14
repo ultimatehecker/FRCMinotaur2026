@@ -31,7 +31,7 @@ import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.ShooterConstants;
 import frc.robot.subsystems.shooter.ShootingPreset;
 import frc.robot.subsystems.shooter.flywheel.ShooterIO.ShooterIOInputs;
->>>>>>> 2ecad4c (moved shooter):src/main/java/frc/robot/subsystems/shooter/flywheel/Shooter.java
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
