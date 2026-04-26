@@ -16,6 +16,8 @@ import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
+import com.ctre.phoenix6.controls.SolidColor;
+import com.ctre.phoenix6.signals.RGBWColor;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.events.EventTrigger;
@@ -27,6 +29,7 @@ import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -35,10 +38,13 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
 import frc.minolib.controller.driverstation.OperatorButtonBoard;
 import frc.minolib.localization.WeightedPoseEstimate;
+import frc.minolib.utilities.AllianceFlipUtility;
 import frc.robot.command_factories.DrivetrainFactory;
 import frc.robot.command_factories.IntakeFactory;
+import frc.robot.command_factories.SuperstructureFactory;
 import frc.robot.constants.ControllerConstants;
 import frc.robot.constants.DrivetrainConstants;
+import frc.robot.constants.FieldConstants;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.GlobalConstants.Mode;
 import frc.robot.constants.IndexerConstants;
@@ -55,6 +61,7 @@ import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIOHardware;
 import frc.robot.subsystems.rollers.RollerSystemIOSimulation;
 import frc.robot.subsystems.rollers.RollerSystemIOHardware;
+import frc.robot.subsystems.shooter.ShooterCalculator;
 import frc.robot.subsystems.shooter.flywheel.Flywheel;
 import frc.robot.subsystems.shooter.flywheel.FlywheelIOHardware;
 import frc.robot.subsystems.shooter.flywheel.FlywheelIOSimulation;
@@ -66,6 +73,8 @@ import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.indexer.Indexer.IndexerGoal;
 import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.slam.SlamIOSimulation;
+import frc.robot.subsystems.led.Led;
+import frc.robot.subsystems.led.LedIOHardware;
 import frc.robot.subsystems.intake.slam.SlamIOHardware;
 import frc.robot.subsystems.tower.Tower;
 import frc.robot.subsystems.tower.Tower.TowerGoal;
@@ -86,6 +95,7 @@ public class RobotContainer {
   private Drivetrain drivetrain;
   private Intake intake;
   private Indexer indexer;
+  private Led led;
   private Tower tower;
   private Flywheel flywheel;
   private Hood hood;
@@ -160,6 +170,10 @@ public class RobotContainer {
     }
   }
 
+  private Led buildLed() {
+    return new Led(new LedIOHardware(), robotState);
+  }
+
   private Tower buildTower() {
     if(Robot.isSimulation()) {
       return new Tower(
@@ -214,14 +228,12 @@ public class RobotContainer {
     if(Robot.isSimulation()) {
       return new Vision(
         robotState, 
-        new VisionIOSimulation(VisionConstants.kBackLeftConfiguration, VisionConstants.kAprilTagLayout, robotState),
-        new VisionIOSimulation(VisionConstants.kBackRightConfiguration, VisionConstants.kAprilTagLayout, robotState)
+        new VisionIOSimulation(VisionConstants.kBackLeftConfiguration, VisionConstants.kAprilTagLayout, robotState)
       );
     } else {
       return new Vision(
         robotState, 
-        new VisionIOPhotonVision(VisionConstants.kBackLeftConfiguration, VisionConstants.kAprilTagLayout),
-        new VisionIOPhotonVision(VisionConstants.kBackRightConfiguration, VisionConstants.kAprilTagLayout)
+        new VisionIOPhotonVision(VisionConstants.kBackLeftConfiguration, VisionConstants.kAprilTagLayout)
       );
     }
   }
@@ -242,6 +254,7 @@ public class RobotContainer {
     drivetrain = buildDrivetrain();
     intake = buildIntake();
     indexer = buildIndexer();
+    led = buildLed();
     tower = buildTower();
     flywheel = buildShooter();
     hood = buildHood();
@@ -252,6 +265,7 @@ public class RobotContainer {
     indexer.setBrakeMode(() -> !coastOverride);
     tower.setBrakeMode(() -> !coastOverride);
     flywheel.setBrakeMode(() -> !coastOverride);
+    hood.setBrakeMode(() -> !coastOverride);
     elevator.setBrakeMode(() -> !coastOverride);
 
     HubShiftUtility.setAllianceWinOverride(() -> {
@@ -367,14 +381,14 @@ public class RobotContainer {
       () -> controlboard.getThrottle(), 
       () -> controlboard.getStrafe(), 
       () -> controlboard.getRotation(),
-      true
+      () -> true
     ));
   }
 
   private void configureDriverBindings() {
-    // controlboard
-    //   .resetGyro()
-    //   .onTrue(Commands.runOnce(() -> drivetrain.seedFieldCentric()));
+    controlboard
+      .resetGyro()
+      .onTrue(Commands.runOnce(() -> drivetrain.resetOdometry(new Pose2d(robotState.getLatestFieldToRobot().getValue().getTranslation(), AllianceFlipUtility.apply(Rotation2d.kZero)))));
 
     controlboard
       .deployIntake()
@@ -395,10 +409,21 @@ public class RobotContainer {
             Commands.runOnce(
               () -> tower.setTowerGoal(TowerGoal.FEED)
             ),
-            Commands.waitSeconds(1),
-            IntakeFactory.deployCommand(this),
-            Commands.waitSeconds(0.35),
-            IntakeFactory.stowCommand(this)
+            Commands.runOnce(
+              () -> indexer.setGoal(IndexerGoal.FEED)
+            ),
+            IntakeFactory.feedCommand(this),
+            Commands.waitSeconds(0.2),
+            IntakeFactory.stowCommand(this),
+            Commands.waitSeconds(0.2),
+            IntakeFactory.feedCommand(this),
+            Commands.waitSeconds(0.2),
+            IntakeFactory.stowCommand(this),
+            Commands.waitSeconds(0.2),
+            IntakeFactory.feedCommand(this),
+            Commands.waitSeconds(0.2),
+            IntakeFactory.stowCommand(this),
+            Commands.waitSeconds(0.2)
           ),
           Commands.runEnd(
             () -> flywheel.runVelocity(flywheel.getPreset().getData().getFlywheelSpeedRPM()), 
@@ -406,17 +431,16 @@ public class RobotContainer {
             flywheel
           ),
           Commands.runEnd(
-              () -> indexer.setGoal(IndexerGoal.FEED), 
-              () -> indexer.setGoal(IndexerGoal.STOP), 
-              indexer
-          ),
-          Commands.runEnd(
             () -> hood.setAngle(flywheel.getPreset().getData().getHoodAngleDegrees()), //TODO: Change this later before the practice field, 
             () -> hood.setAngle(12), 
             hood
           )
-        ).finallyDo(() -> tower.setTowerGoal(TowerGoal.STOP))
+        ).finallyDo(() -> tower.setTowerGoal(TowerGoal.STOP)).alongWith(Commands.runOnce(() -> indexer.setGoal(IndexerGoal.STOP)))
       );
+
+      controlboard
+        .automaticallyAim()
+        .whileTrue(DrivetrainFactory.autoAim(drivetrain, robotState, () -> AllianceFlipUtility.apply(FieldConstants.Hub.topCenterPoint.toTranslation2d()), () -> 0.0, () -> 0.0));
 
       controlboard
         .exhaust()
@@ -495,14 +519,16 @@ public class RobotContainer {
           if (DriverStation.isDisabled()) {
             coastOverride = true;
           }
-        })
-        .withName("Subsystem Coast")
-        .ignoringDisable(true))
+        }).alongWith(led.commandStaticColor(Color.kWhite).until(() -> !coast.getAsBoolean()))
+          .withName("Superstructure Coast")
+          .ignoringDisable(true)
+        )
         .onFalse(Commands.runOnce(() -> {
           coastOverride = false;
         })
-        .withName("Subsystem Uncoast")
-        .ignoringDisable(true));
+          .withName("Superstructure Uncoast")
+          .ignoringDisable(true)
+        );
   }
 
   public void resetSimulationField() {

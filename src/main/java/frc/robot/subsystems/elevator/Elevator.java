@@ -196,10 +196,6 @@ public class Elevator extends SubsystemBase {
         io.setBrakeMode(enabled.getAsBoolean());
     }
 
-    public void setGoal(ElevatorGoal goal) {
-        this.goal = goal;
-    }
-
     public void runVoltage(double voltageSetpoint) {
         goal = ElevatorGoal.MANUAL;
         this.voltageSetpoint = voltageSetpoint;

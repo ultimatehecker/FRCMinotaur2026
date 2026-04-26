@@ -10,12 +10,9 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanism2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.system.plant.LinearSystemId;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.simulation.DCMotorSim;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
@@ -23,7 +20,6 @@ import edu.wpi.first.wpilibj.util.Color8Bit;
 import frc.minolib.math.MathUtility;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.HoodConstants;
-import frc.robot.subsystems.shooter.hood.HoodIO.HoodIOInputs;
 
 public class HoodIOSimulation implements HoodIO {
     private final DCMotor hoodGearbox;

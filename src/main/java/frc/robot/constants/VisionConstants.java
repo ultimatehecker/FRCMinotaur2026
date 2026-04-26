@@ -18,34 +18,31 @@ public class VisionConstants {
     public static final CameraConfiguration kBackLeftConfiguration = new CameraConfiguration()
             .withCameraName(kBackLeftCameraName)
             .withCameraLocation(CameraLocation.BACK_LEFT)
-            .withLengthOffset(Inches.of(9.2837556))
-            .withWidthOffset(Inches.of(1.6423085))
-            .withHeightOffset(Inches.of(6.9584678))
-            .withMountingPitch(Degrees.of(337))
-            .withMountingYaw(Degrees.of(328));
+            .withLengthOffset(Inches.of(-13.169117291))
+            .withWidthOffset(Inches.of(5.947719578))
+            .withHeightOffset(Inches.of(11.063614653))
+            .withMountingPitch(Degrees.of(345))
+            .withMountingYaw(Degrees.of(320));
 
     public static final CameraConfiguration kBackRightConfiguration = new CameraConfiguration()
             .withCameraName(kBackRightCameraName)
             .withCameraLocation(CameraLocation.BACK_RIGHT)
-            .withLengthOffset(Inches.of(9.2837556))
-            .withWidthOffset(Inches.of(-2.1438256))
-            .withHeightOffset(Inches.of(6.9584678))
-            .withMountingPitch(Degrees.of(340))
-            .withMountingYaw(Degrees.of(32));
+            .withLengthOffset(Inches.of(-13.169117291))
+            .withWidthOffset(Inches.of(-5.947719578))
+            .withHeightOffset(Inches.of(11.063614653))
+            .withMountingPitch(Degrees.of(345))
+            .withMountingYaw(Degrees.of(220));
 
-    public static double kMaximumTagAmbiguity = 0.15;
+    public static double kMaximumTagAmbiguity = 0.1;
     public static Distance kMaximumZPoseError = Inches.of(0.5);
 
-    public static double linearStdDevBaseline = 0.02; // Meters
+    public static double linearStdDevBaseline = 0.0254; // Meters
     public static double angularStdDevBaseline = Double.POSITIVE_INFINITY; // Radians
 
     public static double[] cameraStdDevFactors = new double[] {
             1.0, // Camera 0
             1.0 // Camera 1
     };
-
-    public static double linearStdDevMegatag2Factor = 0.5; 
-    public static double angularStdDevMegatag2Factor = Double.POSITIVE_INFINITY; 
 
     public static final double kSimAverageErrorPixels = 0.1;
     public static final double kSimErrorStdDevPixels = 0.05;

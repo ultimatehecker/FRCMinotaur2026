@@ -5,6 +5,9 @@ import java.util.function.Supplier;
 import org.littletonrobotics.junction.Logger;
 
 import com.ctre.phoenix6.controls.ControlRequest;
+import com.ctre.phoenix6.controls.LarsonAnimation;
+import com.ctre.phoenix6.signals.LarsonBounceValue;
+import com.ctre.phoenix6.signals.RGBWColor;
 
 import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.util.Color;
@@ -21,7 +24,7 @@ public class Led extends SubsystemBase {
         this.io = io;
         this.robotState = robotState;
         
-        setDefaultCommand(commandClear());
+        setDefaultCommand(commandIdle());
     }
 
     @Override
@@ -65,7 +68,17 @@ public class Led extends SubsystemBase {
             .withName("Led_Clear");
     }
 
-    private void setControl(ControlRequest request) {
-        setControl(request);
+    public Command commandIdle() {
+        return run(() -> setControl(
+            new LarsonAnimation(0, 111)
+                .withColor(robotState.isRedAlliance() ? new RGBWColor(Color.kRed) : new RGBWColor(Color.kBlue))
+                .withBounceMode(LarsonBounceValue.Back)
+        ))
+            .ignoringDisable(true)
+            .withName("Led_Animation");
+    }
+
+    public void setControl(ControlRequest request) {
+        io.setControl(request);
     }
 }

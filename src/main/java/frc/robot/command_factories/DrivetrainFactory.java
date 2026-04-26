@@ -4,6 +4,7 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
@@ -38,13 +39,14 @@ public class DrivetrainFactory {
 
     private static final SwerveRequest.FieldCentricFacingAngle facingAngleRequest = new SwerveRequest.FieldCentricFacingAngle()
         .withDriveRequestType(DriveRequestType.Velocity)
-        .withSteerRequestType(SteerRequestType.MotionMagicExpo);
+        .withSteerRequestType(SteerRequestType.MotionMagicExpo)
+        .withHeadingPID(5.1, 0, 0.0);
 
-    public static Command handleTeleopDrive(Drivetrain drivetrain, RobotState robotState, DoubleSupplier throttleSupplier, DoubleSupplier strafeSupplier, DoubleSupplier rotationSupplier, boolean isFieldCentric) {
+    public static Command handleTeleopDrive(Drivetrain drivetrain, RobotState robotState, DoubleSupplier throttleSupplier, DoubleSupplier strafeSupplier, DoubleSupplier rotationSupplier, BooleanSupplier isFieldCentric) {
         return Commands.run(() -> {
             ChassisSpeeds speeds = calculateSpeedsBasedOnJoystickInputs(drivetrain, robotState, throttleSupplier, strafeSupplier, rotationSupplier);
 
-            if(isFieldCentric) {
+            if(isFieldCentric.getAsBoolean()) {
                 drivetrain.setControl(new SwerveRequest.FieldCentric()
                     .withVelocityX(speeds.vxMetersPerSecond)
                     .withVelocityY(speeds.vyMetersPerSecond)
@@ -132,8 +134,8 @@ public class DrivetrainFactory {
             );
 
             drivetrain.setControl(facingAngleRequest
-                .withVelocityX(0.0)
-                .withVelocityY(0.0)
+                .withVelocityX(throttleSupplier.getAsDouble())
+                .withVelocityY(strafeSupplier.getAsDouble())
                 .withTargetDirection(desiredHeading)
             );
 
@@ -156,7 +158,7 @@ public class DrivetrainFactory {
         double lateralOffset = launcherTransform.getTranslation().getY();
 
         Rotation2d lateralCorrection = new Rotation2d(Math.asin(MathUtil.clamp(lateralOffset / distanceToTarget, -1.0, 1.0)));
-        return fieldToTargetAngle.plus(lateralCorrection).plus(launcherTransform.getRotation());
+        return fieldToTargetAngle.plus(lateralCorrection).plus(launcherTransform.getRotation()).plus(Rotation2d.fromDegrees(5));
     }
 
     public static boolean isAimed(RobotState robotState, Translation2d target) {

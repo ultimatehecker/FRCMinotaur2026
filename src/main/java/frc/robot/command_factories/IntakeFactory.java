@@ -23,6 +23,10 @@ public class IntakeFactory {
         return Commands.runOnce(() -> robotContainer.getIntake().setGoal(IntakeGoal.DEPLOY));
     }
 
+    public static Command feedCommand(RobotContainer robotContainer) {
+        return Commands.runOnce(() -> robotContainer.getIntake().setGoal(IntakeGoal.FEED));
+    }
+
     public static Command deployHalfCommand(RobotContainer robotContainer) {
         return Commands.runOnce(() -> robotContainer.getIntake().setGoal(IntakeGoal.DEPLOY_HALF));
     }

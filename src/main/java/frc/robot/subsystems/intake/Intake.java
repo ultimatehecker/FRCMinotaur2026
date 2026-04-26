@@ -31,7 +31,7 @@ public class Intake extends SubsystemBase {
     private static final LoggedTunableNumber kFeedPosition = new LoggedTunableNumber("Intake/Slam/FeedPosition", 140.0);
     private static final LoggedTunableNumber kRollerVoltage = new LoggedTunableNumber("Intake/Roller/IntakeVoltage", 7.0);
     private static final LoggedTunableNumber kExhaustVoltage = new LoggedTunableNumber("Intake/Roller/ExhaustVoltage", -6.0);
-    private static final LoggedTunableNumber kIdleVoltage = new LoggedTunableNumber("Intake/Roller/IdleVoltage", 2.0);
+    private static final LoggedTunableNumber kIdleVoltage = new LoggedTunableNumber("Intake/Roller/IdleVoltage", 4.0);
 
     public enum IntakeGoal {
         IDLE,
@@ -121,11 +121,11 @@ public class Intake extends SubsystemBase {
             case DEPLOYING -> {
                 double target = goal == IntakeGoal.DEPLOY_HALF ? kHalfDeployPosition.get() : kDeployedPosition.get();
                 slam.setSetpointPosition(Units.degreesToRadians(target));
-                roller.stop();
+                roller.setVoltage(kRollerVoltage.get());
             }
 
             case DEPLOYED, DEPLOYED_HALF -> {
-                roller.stop();
+                roller.setVoltage(kIdleVoltage.get());
             }
 
             case FEED -> {

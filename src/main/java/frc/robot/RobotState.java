@@ -10,17 +10,19 @@ import java.util.function.IntSupplier;
 
 import org.littletonrobotics.junction.Logger;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
-import edu.wpi.first.math.interpolation.InterpolatingTreeMap;
-import edu.wpi.first.math.interpolation.InverseInterpolator;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.minolib.math.ConcurrentTimeInterpolatableBuffer;
-import frc.minolib.math.DoubleInterpolatableTreeMap;
+import frc.minolib.utilities.AllianceFlipUtility;
+import frc.robot.constants.FieldConstants;
 import frc.robot.constants.GlobalConstants;
+import frc.robot.constants.ShooterConstants;
 
 public class RobotState {
     private final Consumer<WeightedPoseEstimate> visionEstimateConsumer;
@@ -33,6 +35,7 @@ public class RobotState {
 
     private final ConcurrentTimeInterpolatableBuffer<Pose2d> fieldToRobot = ConcurrentTimeInterpolatableBuffer.createBuffer(GlobalConstants.kLoopBackTimeSeconds);
 
+    private final AtomicReference<Double> visionConfidence = new AtomicReference<>(0.0);
     private double lastUsedVisionEstimateTimestamp = 0.0;
     private Pose2d lastUsedVisionPoseEstimate = Pose2d.kZero;
 
@@ -233,10 +236,31 @@ public class RobotState {
         return getMaxAbsoluteValueInRange(driveRollAngularVelocity, minTime, maxTime);
     }
 
+    public double getDistanceToHub() {
+        Translation2d hubCenter = AllianceFlipUtility.apply(FieldConstants.Hub.topCenterPoint.toTranslation2d());
+
+        return getLatestFieldToRobot().getValue().getTranslation().getDistance(hubCenter);
+    }
+
+    public double getShooterDistanceToHub() {
+        Translation2d hubCenter = AllianceFlipUtility.apply(FieldConstants.Hub.topCenterPoint.toTranslation2d());
+        Pose2d launcherPose = getLatestFieldToRobot().getValue().transformBy(ShooterConstants.kRobotToShooterTransform);
+
+        return launcherPose.getTranslation().getDistance(hubCenter);
+    }
+
     public void updateVisionPoseEstimate(WeightedPoseEstimate weightedPoseEstimate) {
         lastUsedVisionEstimateTimestamp = weightedPoseEstimate.getTimestampSeconds();
         lastUsedVisionPoseEstimate = weightedPoseEstimate.getVisionRobotPoseMeters();
         visionEstimateConsumer.accept(weightedPoseEstimate);
+    }
+
+    public void setVisionConfidence(double confidence) {
+        visionConfidence.set(MathUtil.clamp(confidence, 0.0, 1.0));
+    }
+
+    public double getVisionConfidence() {
+        return visionConfidence.get();
     }
 
     public boolean isRedAlliance() {
@@ -269,6 +293,9 @@ public class RobotState {
         Logger.recordOutput("RobotState/DesiredChassisSpeedRobotFrame", getLatestDesiredRobotRelativeChassisSpeeds());
         Logger.recordOutput("RobotState/MeasuredChassisSpeedFieldFrame", getLatestMeasuredFieldRelativeChassisSpeeds());
         Logger.recordOutput("RobotState/FusedChassisSpeedFieldFrame", getLatestFusedFieldRelativeChassisSpeeds());
+
+        Logger.recordOutput("RobotState/DistanceToHub", getDistanceToHub());
+        Logger.recordOutput("RobotState/LauncherDistanceToHub", getShooterDistanceToHub());
     }
 
     private final AtomicReference<Double> intakePivotPosition = new AtomicReference<>(0.0);

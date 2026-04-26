@@ -18,6 +18,7 @@ import edu.wpi.first.math.interpolation.InverseInterpolator;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+
 import frc.minolib.advantagekit.LoggedTunableNumber;
 import frc.minolib.math.Bounds;
 import frc.minolib.utilities.AllianceFlipUtility;
@@ -26,13 +27,12 @@ import frc.robot.constants.FieldConstants;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.HoodConstants;
 import frc.robot.constants.ShooterConstants;
-import frc.robot.subsystems.shooter.flywheel.Shooter;
+import frc.robot.subsystems.shooter.flywheel.Flywheel;
 import frc.robot.subsystems.shooter.hood.Hood;
 
 import lombok.Getter;
 
 public class ShooterCalculator {
-    /*
     private final RobotState robotState;
 
     private static final InterpolatingTreeMap<Double, Rotation2d> hoodAngleLUT = new InterpolatingTreeMap<>(InverseInterpolator.forDouble(), Rotation2d::interpolate);
@@ -48,6 +48,9 @@ public class ShooterCalculator {
 
     private double flywheelVelocityOffset = 0.0;
     @Getter private double hoodAngleOffsetDegrees = 0.0;
+    private static final double maxFlywheelVelocityOffset = 200.0;
+
+    private static final double dh = 0.01;
 
     private double lastHoodAngle;
     private Rotation2d lastDriveAngle;
@@ -58,7 +61,7 @@ public class ShooterCalculator {
     private static final double maxDistance;
     private static final double passingMinDistance;
     private static final double passingMaxDistance;
-    private static final double phaseDelay;
+    private static final double phaseDelaySeconds;
 
     public static final double hubPresetDistance = 0.96;
     public static final double towerPresetDistance = 2.5;
@@ -71,8 +74,6 @@ public class ShooterCalculator {
     public static final ShootingPreset towerPreset;
     public static final ShootingPreset trenchPreset;
     public static final ShootingPreset outpostPreset;
-    public static final ShootingPreset hoodMinPreset;
-    public static final ShootingPreset hoodMaxPreset;
 
     private static final double xPassTarget = Units.inchesToMeters(37); //TODO: Convert to an actual Translation in constants
     private static final double yPassTarget = Units.inchesToMeters(65); //TODO: Convert to an actual Translation in constants
@@ -82,7 +83,7 @@ public class ShooterCalculator {
         maxDistance = 4.9;
         passingMinDistance = 5.4;
         passingMaxDistance = 17.16;
-        phaseDelay = 0.03;
+        phaseDelaySeconds = 0.03;
 
         hoodAngleLUT.put(0.96, Rotation2d.fromDegrees(10.0));
         hoodAngleLUT.put(1.16, Rotation2d.fromDegrees(12.0));
@@ -135,37 +136,32 @@ public class ShooterCalculator {
 
         passingPreset = new ShootingPreset(
             new LoggedTunableNumber("ShooterCalculator/Presets/Passing/HoodAngle", hoodAngleLUT.get(passingPresetDistance).getDegrees()),
-            new LoggedTunableNumber("ShooterCalculator/Presets/Passing/FlywheelSpeed",flywheelVelocityLUT.get(passingPresetDistance))
+            new LoggedTunableNumber("ShooterCalculator/Presets/Passing/FlywheelVelocity",flywheelVelocityLUT.get(passingPresetDistance)),
+            new LoggedTunableNumber("ShooterCalculator/Presets/Passing/FlywheelVoltage",0.0)
         );
 
         hubPreset = new ShootingPreset(
             new LoggedTunableNumber("ShooterCalculator/Presets/Hub/HoodAngle", hoodAngleLUT.get(hubPresetDistance).getDegrees()),
-            new LoggedTunableNumber("ShooterCalculator/Presets/Hub/FlywheelSpeed", flywheelVelocityLUT.get(hubPresetDistance))
+            new LoggedTunableNumber("ShooterCalculator/Presets/Hub/FlywheelSpeed", flywheelVelocityLUT.get(hubPresetDistance)),
+            new LoggedTunableNumber("ShooterCalculator/Presets/Hub/FlywheelVoltage",0.0)
         );
 
         towerPreset = new ShootingPreset(
             new LoggedTunableNumber("ShooterCalculator/Presets/Tower/HoodAngle", hoodAngleLUT.get(towerPresetDistance).getDegrees()),
-            new LoggedTunableNumber("ShooterCalculator/Presets/Tower/FlywheelSpeed", flywheelVelocityLUT.get(towerPresetDistance))
+            new LoggedTunableNumber("ShooterCalculator/Presets/Tower/FlywheelSpeed", flywheelVelocityLUT.get(towerPresetDistance)),
+            new LoggedTunableNumber("ShooterCalculator/Presets/Tower/FlywheelVoltage",0.0)
         );
 
         trenchPreset = new ShootingPreset(
             new LoggedTunableNumber("ShooterCalculator/Presets/Trench/HoodAngle", hoodAngleLUT.get(trenchPresetDistance).getDegrees()),
-            new LoggedTunableNumber("ShooterCalculator/Presets/Trench/FlywheelSpeed", flywheelVelocityLUT.get(trenchPresetDistance))
+            new LoggedTunableNumber("ShooterCalculator/Presets/Trench/FlywheelSpeed", flywheelVelocityLUT.get(trenchPresetDistance)),
+            new LoggedTunableNumber("ShooterCalculator/Presets/Trench/FlywheelVoltage",0.0)
         );
 
         outpostPreset = new ShootingPreset(
             new LoggedTunableNumber("ShooterCalculator/Presets/Outpost/HoodAngle", hoodAngleLUT.get(outpostPresetDistance).getDegrees()),
-            new LoggedTunableNumber("ShooterCalculator/Presets/Outpost/FlywheelSpeed", flywheelVelocityLUT.get(outpostPresetDistance))
-        );
-
-        hoodMinPreset = new ShootingPreset(
-            new LoggedTunableNumber("ShootingCalculator/Presets/HoodMin/HoodAngle", HoodConstants.kHoodMinimumPosition.in(Degrees)),
-            new LoggedTunableNumber("ShooterCalculator/Presets/HoodMin/FlywheelSpeed", 50)
-        );
-
-        hoodMaxPreset = new ShootingPreset(
-            new LoggedTunableNumber("ShooterCalculator/Presets/HoodMax/HoodAngle", HoodConstants.kHoodMaximumPosition.in(Degrees)),
-            new LoggedTunableNumber("ShooterCalculator/Presets/HoodMax/FlywheelSpeed", 50)
+            new LoggedTunableNumber("ShooterCalculator/Presets/Outpost/FlywheelSpeed", flywheelVelocityLUT.get(outpostPresetDistance)),
+            new LoggedTunableNumber("ShooterCalculator/Presets/Outpost/FlywheelVoltage",0.0)
         );
     }
 
@@ -184,91 +180,106 @@ public class ShooterCalculator {
         FieldConstants.LinesHorizontal.leftBumpEnd
     );
 
-    public static final LoggedTunableNumber passingIdleSpeed = new LoggedTunableNumber("ShooterCalculator/PassingIdleSpeed", 100);
-
+    private final SolverConfiguration solverConfig = new SolverConfiguration();
+ 
+    // Newton solver warm-start state
+    private double previousTOF = -1.0;
+    private double previousSpeed = 0.0;
+ 
+    // Previous-cycle robot velocities for second-order pose prediction
+    private double previousRobotVelocityVx = 0.0;
+    private double previousRobotVelocityVy = 0.0;
+    private double previousRobotVelocityOmega = 0.0;
+ 
     private static ShooterCalculator instance;
+ 
     public static ShooterCalculator getInstance(RobotState robotState) {
         if (instance == null) instance = new ShooterCalculator(robotState);
         return instance;
     }
-    
+ 
+    /** Access the already-initialised singleton. Throws if called before getInstance(RobotState). */
+    public static ShooterCalculator getInstance() {
+        if (instance == null) {
+            throw new IllegalStateException("ShooterCalculator not yet initialised — call getInstance(RobotState) first");
+        }
+        return instance;
+    }
+ 
     private ShooterCalculator(RobotState robotState) {
         this.robotState = robotState;
     }
-
-    public static double getMinTimeOfFlight() {
-        return timeOfFlightLUT.get(minDistance);
-    }
-
-    public static double getMaxTimeOfFlight() {
-        return timeOfFlightLUT.get(maxDistance);
-    }
-
-    public double getNaiveTOF(double distance) {
-        return timeOfFlightLUT.get(distance);
-    }
-
+ 
+    /** Invalidate the per-cycle cache. Call once at the top of Superstructure.periodic(). */
     public void clearLaunchingParameters() {
         latestParameters = null;
     }
+ 
+    public static double getMinTimeOfFlight() { return timeOfFlightLUT.get(minDistance); }
+    public static double getMaxTimeOfFlight() { return timeOfFlightLUT.get(maxDistance); }
+    public double getNaiveTOF(double distance) { return timeOfFlightLUT.get(distance); }
 
     public ShootingParameters getParameters() {
-        boolean passing = AllianceFlipUtility.applyX(robotState.getLatestFieldToRobot().getValue().getX()) > FieldConstants.LinesVertical.hubCenter;
-
-        if (latestParameters != null) {
-            return latestParameters;
-        }
-
-        Pose2d rawPose = robotState.getLatestFieldToRobot().getValue();
-        ChassisSpeeds robotVelocity = robotState.getLatestMeasuredRobotRelativeChassisSpeeds();
-        
-        double dt = phaseDelay;
-        double ax = (robotVelocity.vxMetersPerSecond - previousRobotVelocityVx)    / GlobalConstants.kLoopPeriodSeconds;
-        double ay = (robotVelocity.vyMetersPerSecond - previousRobotVelocityVy)    / GlobalConstants.kLoopPeriodSeconds;
-        double aW = (robotVelocity.omegaRadiansPerSecond - previousRobotVelocityOmega) / GlobalConstants.kLoopPeriodSeconds;
-
-        Pose2d estimatedPose = rawPose.exp(new Twist2d(
-            robotVelocity.vxMetersPerSecond * dt + 0.5 * ax * dt * dt,
-            robotVelocity.vyMetersPerSecond * dt + 0.5 * ay * dt * dt,
-            robotVelocity.omegaRadiansPerSecond * dt + 0.5 * aW * dt * dt
-        ));
-
-        previousRobotVelocityVx = robotVelocity.vxMetersPerSecond;
-        previousRobotVelocityVy = robotVelocity.vyMetersPerSecond;
-        previousRobotVelocityOmega = robotVelocity.omegaRadiansPerSecond;
-
-        Pose2d launcherPose = estimatedPose.transformBy(ShooterConstants.kRobotToShooterTransform.);
+        if (latestParameters != null) return latestParameters;
  
-        // Hub or passing target in field coordinates
-        Translation2d target = passing ? getPassingTarget() : AllianceFlipUtility.apply(FieldConstants.Hub.topCenterPoint.toTranslation2d());
+        // Profile selection: robot past hub centre line → passing
+        boolean passing = AllianceFlipUtility.applyX(robotState.getLatestFieldToRobot().getValue().getX()) > FieldConstants.LinesVertical.hubCenter;
+ 
+        // Second-order latency-compensated pose prediction
+        // v*dt + 0.5*a*dt^2 tracks curvature through turns better than first-order
+        Pose2d rawPose = robotState.getLatestFieldToRobot().getValue();
+        ChassisSpeeds velocity = robotState.getLatestMeasuredRobotRelativeChassisSpeeds();
+ 
+        double dt = phaseDelaySeconds;
+        double ax = (velocity.vxMetersPerSecond - previousRobotVelocityVx) / GlobalConstants.kLoopPeriodSeconds;
+        double ay = (velocity.vyMetersPerSecond - previousRobotVelocityVy) / GlobalConstants.kLoopPeriodSeconds;
+        double aW = (velocity.omegaRadiansPerSecond - previousRobotVelocityOmega) / GlobalConstants.kLoopPeriodSeconds;
+ 
+        Pose2d estimatedPose = rawPose.exp(new Twist2d(
+            velocity.vxMetersPerSecond     * dt + 0.5 * ax * dt * dt,
+            velocity.vyMetersPerSecond     * dt + 0.5 * ay * dt * dt,
+            velocity.omegaRadiansPerSecond * dt + 0.5 * aW * dt * dt)
+        );
+ 
+        previousRobotVelocityVx = velocity.vxMetersPerSecond;
+        previousRobotVelocityVy = velocity.vyMetersPerSecond;
+        previousRobotVelocityOmega = velocity.omegaRadiansPerSecond;
+ 
+        // Launcher position in field coordinates
+        Pose2d launcherPose = estimatedPose.transformBy(ShooterConstants.kRobotToShooterTransform);
+ 
+        // Hub or passing target
+        Translation2d target = passing ? getPassingTarget(): AllianceFlipUtility.apply(FieldConstants.Hub.topCenterPoint.toTranslation2d());
         double naiveDistance = target.getDistance(launcherPose.getTranslation());
-
-        ChassisSpeeds fieldSetpoint = RobotState.getInstance().getFieldSetpointVelocity();
-        ChassisSpeeds launcherVelocity = DriverStation.isAutonomous() ? fieldSetpoint : addRotationalVelocityComponent(fieldSetpoint, launcherPose);
+ 
+        // Field-relative launcher velocity including rotational component (ω×r)
+        // Use desired speeds so SOTM leads intended motion, not measured lag
+        ChassisSpeeds fieldSpeeds = DriverStation.isAutonomous() ? robotState.getLatestMeasuredFieldRelativeChassisSpeeds() : robotState.getLatestDesiredFieldRelativeChassisSpeeds();
+        ChassisSpeeds launcherVelocity = addRotationalVelocityComponent(fieldSpeeds, launcherPose);
  
         double vx = launcherVelocity.vxMetersPerSecond;
         double vy = launcherVelocity.vyMetersPerSecond;
         double robotSpeed = Math.hypot(vx, vy);
  
-        // Speed cap — above this we are outside LUT calibration range
         if (robotSpeed > solverConfig.maxSOTMSpeed) {
             latestParameters = ShootingParameters.INVALID;
             return latestParameters;
         }
-
+ 
         boolean velocityFiltered = robotSpeed < solverConfig.minSOTMSpeed;
-
+ 
+        // Newton-method SOTM solver
         double solvedTOF;
         double solvedDistance;
-        int    iterationsUsed;
+        int iterationsUsed;
  
         if (velocityFiltered) {
             solvedTOF = lookupTOF(passing, naiveDistance);
             solvedDistance = naiveDistance;
             iterationsUsed = 0;
         } else {
-            // Warm-start from previous cycle when available (usually converges in 1–2 iterations)
             double tof = previousTOF > 0 ? previousTOF : lookupTOF(passing, naiveDistance);
+ 
             solvedDistance = naiveDistance;
             iterationsUsed = 0;
  
@@ -278,31 +289,27 @@ public class ShooterCalculator {
             for (int i = 0; i < solverConfig.maxIterations; i++) {
                 double prevTOF = tof;
  
-                double c        = solverConfig.dragCoeff;
-                double dragExp  = c < 1e-6 ? 1.0 : Math.exp(-c * tof);
+                double c = solverConfig.dragCoeff;
+                double dragExp = c < 1e-6 ? 1.0 : Math.exp(-c * tof);
                 double driftTOF = c < 1e-6 ? tof : (1.0 - dragExp) / c;
  
-                // Projected launcher -> target vector at time t
-                double prx  = rx - vx * driftTOF;
-                double pry  = ry - vy * driftTOF;
+                double prx = rx - vx * driftTOF;
+                double pry = ry - vy * driftTOF;
                 double dist = Math.hypot(prx, pry);
  
                 if (dist < 0.01) {
-                    // Degenerate: launcher essentially on top of hub
                     tof = lookupTOF(passing, naiveDistance);
                     iterationsUsed = solverConfig.maxIterations + 1;
                     break;
                 }
  
                 double lookupT = lookupTOF(passing, dist);
- 
-                // Derivative: df/dt via chain rule
                 double dPrime = -dragExp * (prx * vx + pry * vy) / dist;
                 double gPrime = tofDerivative(passing, dist);
                 double f = lookupT - tof;
                 double fPrime = gPrime * dPrime - 1.0;
  
-                tof = Math.abs(fPrime) > 0.01 ? tof - f / fPrime : lookupT; // fixed-point fallback when denominator is near-zero
+                tof = Math.abs(fPrime) > 0.01 ? tof - f / fPrime : lookupT;
  
                 tof = MathUtil.clamp(tof, solverConfig.tofMin, solverConfig.tofMax);
                 iterationsUsed = i + 1;
@@ -311,8 +318,7 @@ public class ShooterCalculator {
                 if (Math.abs(tof - prevTOF) < solverConfig.convergenceTolerance) break;
             }
  
-            // Divergence guard
-            if (tof > solverConfig.tofMax || tof < 0 || Double.isNaN(tof)) {
+            if (tof > solverConfig.tofMax || tof < 0.0 || Double.isNaN(tof)) {
                 tof = lookupTOF(passing, naiveDistance);
                 solvedDistance = naiveDistance;
                 iterationsUsed = solverConfig.maxIterations + 1;
@@ -325,9 +331,11 @@ public class ShooterCalculator {
         previousSpeed = robotSpeed;
  
         double effectiveTOF = solvedTOF + solverConfig.mechLatencyMs / 1000.0;
+ 
+        // Drivetrain heading — accounts for launcher offset and SOTM velocity compensation
         Rotation2d driveAngle = getDesiredDrivetrainHeadingToShoot(estimatedPose, target, launcherVelocity, solvedTOF);
  
-        // Hood and flywheel from LUTs at solved (lookahead) distance
+        // Hood and flywheel from LUTs
         double hoodAngle = lookupHoodAngle(passing, solvedDistance).getRadians() + Units.degreesToRadians(hoodAngleOffsetDegrees);
         double flywheelVelocity = lookupFlywheel(passing, solvedDistance) + flywheelVelocityOffset;
  
@@ -341,16 +349,16 @@ public class ShooterCalculator {
         lastHoodAngle  = hoodAngle;
         lastDriveAngle = driveAngle;
  
-        // "Boxes of bad" — suppress isValid in known bad shooting regions
+        // Validity
         Pose2d flippedPose = AllianceFlipUtility.apply(estimatedPose);
         boolean outsideBadBoxes = !(towerBound.contains(flippedPose.getTranslation()) || nearHubBound.contains(flippedPose.getTranslation()) || farHubBound.contains(flippedPose.getTranslation()));
  
-        double effectiveMinDist = passing ? passingMinDistance : minDistance;
-        double effectiveMaxDist = passing ? passingMaxDistance : maxDistance;
+        double  effectiveMinDist = passing ? passingMinDistance : minDistance;
+        double  effectiveMaxDist = passing ? passingMaxDistance : maxDistance;
         boolean inRange = solvedDistance >= effectiveMinDist && solvedDistance <= effectiveMaxDist;
         boolean isValid = outsideBadBoxes && inRange;
  
-        // Solver quality: converged fast = high quality, diverged = zero
+        // Confidence
         double solverQuality;
         if (velocityFiltered) {
             solverQuality = 1.0;
@@ -359,15 +367,11 @@ public class ShooterCalculator {
         } else if (iterationsUsed <= 3) {
             solverQuality = 1.0;
         } else {
-            solverQuality = MathUtil.interpolate(1.0, 0.1, (double)(iterationsUsed - 3) / (solverConfig.maxIterations - 3));
+            solverQuality = MathUtil.interpolate(1.0, 0.1,(double) (iterationsUsed - 3) / (solverConfig.maxIterations - 3));
         }
  
         double headingErrorRad = MathUtil.angleModulus(driveAngle.getRadians() - estimatedPose.getRotation().getRadians());
- 
-        double confidence = computeConfidence(
-            solverQuality, robotSpeed, headingErrorRad,
-            solvedDistance, RobotState.getInstance().getVisionConfidence()
-        );
+        double confidence = computeConfidence(solverQuality, robotSpeed, headingErrorRad, solvedDistance, robotState.getVisionConfidence());
  
         latestParameters = new ShootingParameters(
             isValid,
@@ -381,48 +385,184 @@ public class ShooterCalculator {
             effectiveTOF,
             passing,
             confidence,
-            iterationsUsed);
+            iterationsUsed
+        );
  
-        // AdvantageKit logging
         Logger.recordOutput("ShooterCalculator/TargetPose", new Pose2d(target, Rotation2d.kZero));
+        Logger.recordOutput("ShooterCalculator/LauncherPose", launcherPose);
         Logger.recordOutput("ShooterCalculator/SolvedDistance", solvedDistance);
         Logger.recordOutput("ShooterCalculator/NaiveDistance", naiveDistance);
         Logger.recordOutput("ShooterCalculator/SolvedTOF", solvedTOF);
+        Logger.recordOutput("ShooterCalculator/EffectiveTOF", effectiveTOF);
         Logger.recordOutput("ShooterCalculator/Confidence", confidence);
         Logger.recordOutput("ShooterCalculator/IterationsUsed", iterationsUsed);
         Logger.recordOutput("ShooterCalculator/FlywheelOffset", flywheelVelocityOffset);
+        Logger.recordOutput("ShooterCalculator/HoodOffsetDegrees", hoodAngleOffsetDegrees);
         Logger.recordOutput("ShooterCalculator/IsValid", isValid);
         Logger.recordOutput("ShooterCalculator/Passing", passing);
+        Logger.recordOutput("ShooterCalculator/DriveAngle", driveAngle);
+        Logger.recordOutput("ShooterCalculator/RobotSpeed", robotSpeed);
+        Logger.recordOutput("ShooterCalculator/VelocityFiltered", velocityFiltered);
  
         return latestParameters;
     }
-
-    private static Rotation2d getDesiredDrivetrainHeadingToShoot(Pose2d robotPose, Translation2d target, ChassisSpeeds fieldRelativeVelocity, double timeOfFlight) {
-        Translation2d virtualTarget = target.minus(new Translation2d(
-            fieldRelativeVelocity.vxMetersPerSecond * timeOfFlight,
-            fieldRelativeVelocity.vyMetersPerSecond * timeOfFlight)
-        );
-
+ 
+    /**
+     * Returns the robot heading required so the LAUNCHER (not the robot centre)
+     * points at the velocity-compensated virtual target.
+     *
+     * The virtual target is the real hub shifted backward by robot velocity × TOF.
+     * Aiming there means the fuel arrives at the real hub despite robot motion.
+     *
+     * DrivetrainFactory.autoAim() should use getParameters().driveAngle() when SOTM
+     * is active and confidence is sufficient, falling back to this method with
+     * timeOfFlight = 0 for purely geometric (stationary) aiming.
+     *
+     * @param robotPose Current (latency-compensated) robot pose
+     * @param target Field-relative target translation
+     * @param fieldRelativeVelocity  Field-relative launcher velocity
+     * @param timeOfFlight Solved TOF in seconds (pass 0 for stationary aim)
+     */
+    public static Rotation2d getDesiredDrivetrainHeadingToShoot(Pose2d robotPose, Translation2d target, ChassisSpeeds fieldRelativeVelocity, double timeOfFlight) {
+        // Shift hub backward by velocity×TOF to get the virtual aim point
+        Translation2d virtualTarget = target.minus(new Translation2d(fieldRelativeVelocity.vxMetersPerSecond * timeOfFlight,fieldRelativeVelocity.vyMetersPerSecond * timeOfFlight));
         Rotation2d fieldToHubAngle = virtualTarget.minus(robotPose.getTranslation()).getAngle();
+ 
         double distanceToVirtualTarget = virtualTarget.getDistance(robotPose.getTranslation());
-
-        Rotation2d hubAngle = new Rotation2d(Math.asin(MathUtil.clamp(ShooterConstants.kRobotToShooterTransform.getTranslation().getY() / distanceToVirtualTarget, -1.0, 1.0)));
-        return fieldToHubAngle.plus(hubAngle).plus(ShooterConstants.kRobotToShooterTransform.getRotation().toRotation2d());
+ 
+        // asin(opposite/hypotenuse) — lateral launcher offset correction
+        // Corrects for the launcher not being at the robot centre
+        double lateralOffset = ShooterConstants.kRobotToShooterTransform.getTranslation().getY();
+        Rotation2d lateralCorrection = new Rotation2d(Math.asin(MathUtil.clamp(lateralOffset / distanceToVirtualTarget, 1.0, 1.0)));
+ 
+        return fieldToHubAngle.plus(lateralCorrection).plus(ShooterConstants.kRobotToShooterTransform.getRotation());
     }
-
+ 
     public Translation2d getPassingTarget() {
-        double flippedY = AllianceFlipUtility.apply(robotState.getLatestFieldToRobot().getValue()).getY();
-        boolean mirror = flippedY > FieldConstants.LinesHorizontal.center;
-
-        Translation2d flippedGoalTranslation = AllianceFlipUtility.apply(
-            new Translation2d(xPassTarget, mirror ? FieldConstants.fieldWidth - yPassTarget : yPassTarget)
-        );
-
-        return flippedGoalTranslation;
+        double  flippedY = AllianceFlipUtility.apply(robotState.getLatestFieldToRobot().getValue()).getY();
+        boolean mirror   = flippedY > FieldConstants.LinesHorizontal.center;
+        return AllianceFlipUtility.apply(new Translation2d(xPassTarget, mirror ? FieldConstants.fieldWidth - yPassTarget : yPassTarget));
+    }
+ 
+    /** Nudge flywheel speed ±delta. Clamped to ±200. Bind to copilot D-pad. */
+    public void adjustFlywheelOffset(double delta) {
+        flywheelVelocityOffset = MathUtil.clamp(flywheelVelocityOffset + delta, -maxFlywheelVelocityOffset, maxFlywheelVelocityOffset);
+    }
+ 
+    public void resetFlywheelOffset() {
+        flywheelVelocityOffset  = 0.0; 
     }
 
-    public void incrementHoodAngleOffset(double incrementDegrees) {
-        hoodAngleOffsetDegrees += incrementDegrees;
+    public double getFlywheelOffset() {
+        return flywheelVelocityOffset; 
     }
-        */
+
+    public void incrementHoodAngleOffset(double deg) {
+        hoodAngleOffsetDegrees += deg; 
+    }
+
+    public void resetHoodAngleOffset() { 
+        hoodAngleOffsetDegrees   = 0.0; 
+    }
+ 
+    /**
+     * Reset warm-start state. Call after a pose reset so stale TOF
+     * doesn't seed the solver on the next cycle.
+     */
+    public void resetWarmStart() {
+        previousTOF = -1.0;
+        previousSpeed = 0.0;
+        previousRobotVelocityVx = 0.0;
+        previousRobotVelocityVy = 0.0;
+        previousRobotVelocityOmega = 0.0;
+    }
+ 
+    private static double lookupTOF(boolean passing, double distance) {
+        return passing ? passingTimeOfFlightLUT.get(distance) : timeOfFlightLUT.get(distance);
+    }
+ 
+    private static Rotation2d lookupHoodAngle(boolean passing, double distance) {
+        return passing ? passingHoodAngleLUT.get(distance) : hoodAngleLUT.get(distance);
+    }
+ 
+    private static double lookupFlywheel(boolean passing, double distance) {
+        return passing ? passingFlywheelVelocityLUT.get(distance) : flywheelVelocityLUT.get(distance);
+    }
+ 
+    private static double tofDerivative(boolean passing, double d) {
+        return (lookupTOF(passing, d + dh) - lookupTOF(passing, d - dh)) / (2.0 * dh);
+    }
+ 
+    private static ChassisSpeeds addRotationalVelocityComponent(ChassisSpeeds fieldSpeeds, Pose2d launcherPose) {
+        double heading = launcherPose.getRotation().getRadians();
+        double cosH = Math.cos(heading);
+        double sinH = Math.sin(heading);
+        double offX = ShooterConstants.kRobotToShooterTransform.getTranslation().getX();
+        double offY = ShooterConstants.kRobotToShooterTransform.getTranslation().getY();
+        double fieldOffX =  offX * cosH - offY * sinH;
+        double fieldOffY =  offX * sinH + offY * cosH;
+        double omega = fieldSpeeds.omegaRadiansPerSecond;
+
+        return new ChassisSpeeds(fieldSpeeds.vxMetersPerSecond + (-fieldOffY) * omega, fieldSpeeds.vyMetersPerSecond + ( fieldOffX) * omega, omega);
+    }
+
+    private double computeConfidence(double solverQuality, double robotSpeed, double headingErrorRadians, double distance, double visionConfidence) {
+        double convergenceQuality = solverQuality;
+        double speedDelta = Math.abs(robotSpeed - previousSpeed);
+        double velocityStability = MathUtil.clamp(1.0 - speedDelta / 0.5, 0.0, 1.0);
+        double visionConf = MathUtil.clamp(visionConfidence, 0.0, 1.0);
+        double distanceScale = MathUtil.clamp(solverConfig.headingReferenceDistance / distance, 0.5, 2.0);
+        double speedScale = 1.0 / (1.0 + solverConfig.headingSpeedScalar * robotSpeed);
+        double scaledMaxErr = solverConfig.headingMaxErrorRadians * distanceScale * speedScale;
+        double headingAcc = MathUtil.clamp(1.0 - Math.abs(headingErrorRadians) / scaledMaxErr, 0.0, 1.0);
+ 
+        double rangeSpan = maxDistance - minDistance;
+        double rangeFrac = (distance - minDistance) / rangeSpan;
+        double distInRange = MathUtil.clamp(1.0 - 2.0 * Math.abs(rangeFrac - 0.5), 0.0, 1.0);
+ 
+        double[] components = { convergenceQuality, velocityStability, visionConf, headingAcc, distInRange };
+        double[] weights = { solverConfig.wConvergence, solverConfig.wVelocityStability, solverConfig.wVisionConfidence, solverConfig.wHeadingAccuracy, solverConfig.wDistanceInRange };
+ 
+        double logSum = 0.0, sumW = 0.0;
+        for (int i = 0; i < components.length; i++) {
+            if (components[i] <= 0.0) return 0.0;
+            logSum += weights[i] * Math.log(components[i]);
+            sumW   += weights[i];
+        }
+ 
+        return sumW > 0 ? MathUtil.clamp(Math.exp(logSum / sumW) * 100.0, 0.0, 100.0) : 0.0;
+    }
+
+    public static class SolverConfiguration {
+        // Newton solver
+        public int maxIterations = 20;
+        public double convergenceTolerance = 0.001; // seconds
+        public double tofMin = 0.05;
+        public double tofMax = 5.0;
+ 
+        // Below this field speed (m/s) skip SOTM and aim straight
+        public double minSOTMSpeed = 0.10;
+        // Above this field speed (m/s) refuse to shoot — outside calibration
+        public double maxSOTMSpeed = 3.0;
+ 
+        // Drag coefficient (1/s). displacement = v*(1-e^(-c*t))/c
+        // Set to 0 to disable drag compensation.
+        public double dragCoeff = 0.24;
+ 
+        // Latency budgets
+        public double phaseDelayMs = 30.0; // vision/command pipeline lag (ms)
+        public double mechLatencyMs = 20.0; // mechanism response lag (ms)
+ 
+        // Confidence weights (weighted geometric mean — one zero kills total)
+        public double wConvergence = 1.0;
+        public double wVelocityStability = 0.8;
+        public double wVisionConfidence = 1.2;
+        public double wHeadingAccuracy = 1.5;
+        public double wDistanceInRange = 0.5;
+ 
+        // Heading accuracy thresholds
+        public double headingMaxErrorRadians = Math.toRadians(3.0);
+        public double headingSpeedScalar = 1.0;
+        public double headingReferenceDistance = 2.5; // meters
+    }
 }

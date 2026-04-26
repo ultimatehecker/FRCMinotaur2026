@@ -1,12 +1,8 @@
 package frc.robot.subsystems.shooter.hood;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
-import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
 
 import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.Logger;
 
@@ -19,15 +15,12 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
-import frc.minolib.math.EqualsUtility;
 import frc.minolib.utilities.SubsystemDataProcessor;
 import frc.robot.Robot;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.HoodConstants;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Accessors;
 
 public class Hood extends SubsystemBase {
     private static final LoggedTunableNumber kP = new LoggedTunableNumber("Hood/kP");
@@ -42,8 +35,6 @@ public class Hood extends SubsystemBase {
 
     private static final LoggedTunableNumber toleranceDegrees = new LoggedTunableNumber("Hood/ToleranceDegrees", 2.0);
     private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Hood/ReadyDebounceSeconds", 0.08);
-
-    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Hood/HomingVoltage", -3.0);
 
     public enum HoodGoal {
         IDLE,

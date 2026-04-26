@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.littletonrobotics.junction.Logger;
 
@@ -283,6 +284,46 @@ public class Vision extends SubsystemBase {
             fusedStdDevs,
             totalTags
         );
+    }
+
+    public Optional<WeightedPoseEstimate> getBestSingleEstimate() {
+        WeightedPoseEstimate best = null;
+        double bestAmbiguity = Double.MAX_VALUE;
+
+        for (int cameraIndex = 0; cameraIndex < io.length; cameraIndex++) {
+            for (var observation : inputs[cameraIndex].poseObservations) {
+                boolean rejected = observation.numTags() == 0 || (observation.numTags() == 1 && observation.averageAmbiguity() > VisionConstants.kMaximumTagAmbiguity)
+                    || observation.cameraPose().getX() < 0.0
+                    || observation.cameraPose().getX() > VisionConstants.kAprilTagLayout.getFieldLength()
+                    || observation.cameraPose().getY() < 0.0
+                    || observation.cameraPose().getY() > VisionConstants.kAprilTagLayout.getFieldWidth();
+
+                if (rejected) continue;
+
+                double ambiguity = observation.numTags() > 1 ? 0.0 : observation.averageAmbiguity();
+
+                if (ambiguity < bestAmbiguity) {
+                    bestAmbiguity = ambiguity;
+
+                    double linearStdDev = VisionConstants.linearStdDevBaseline * (Math.pow(observation.averageTagDistance(), 2.0) / observation.numTags());
+
+                    if (cameraIndex < VisionConstants.cameraStdDevFactors.length) {
+                        linearStdDev *= VisionConstants.cameraStdDevFactors[cameraIndex];
+                    }
+
+                    best = new WeightedPoseEstimate(
+                        observation.cameraPose().toPose2d(),
+                        observation.timestamp(),
+                        VecBuilder.fill(linearStdDev, linearStdDev, VisionConstants.angularStdDevBaseline),
+                        observation.numTags());
+                }
+            }
+        }
+
+        Logger.recordOutput("Vision/BestSingleEstimateAmbiguity", bestAmbiguity == Double.MAX_VALUE ? -1.0 : bestAmbiguity);
+        Logger.recordOutput("Vision/BestSingleEstimateAvailable", best != null);
+
+        return Optional.ofNullable(best);
     }
 
     private void computeVisionConfidence(List<WeightedPoseEstimate> acceptedEstimates) {

@@ -4,9 +4,7 @@ import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform2d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.MomentOfInertia;
@@ -34,5 +32,5 @@ public class ShooterConstants {
 
     public static final MomentOfInertia kShooterMOI = KilogramSquareMeters.of(0.1);
 
-    public static Transform2d kRobotToShooterTransform = new Transform2d(-0.1758535599, 0.0, new Rotation2d(Math.PI));
+    public static Transform2d kRobotToShooterTransform = new Transform2d(-0.1758535599, 0.0, new Rotation2d(0));
 }
