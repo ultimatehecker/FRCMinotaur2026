@@ -80,7 +80,7 @@ public class Vision extends SubsystemBase {
             }
 
             for (var observation : inputs[cameraIndex].poseObservations) {
-                boolean rejectPose = observation.numTags() == 0 || (observation.numTags() == 1 && observation.averageAmbiguity() > VisionConstants.kMaximumTagAmbiguity) || Math.abs(observation.cameraPose().getZ()) > VisionConstants.kMaximumZPoseError.in(Inches) 
+                boolean rejectPose = observation.numTags() == 0 || (observation.numTags() == 1 && observation.averageAmbiguity() > VisionConstants.kMaximumTagAmbiguity) 
                     || observation.cameraPose().getX() < 0.0
                     || observation.cameraPose().getX() > VisionConstants.kAprilTagLayout.getFieldLength() // TODO: Switch these to FieldConstants when they are imported
                     || observation.cameraPose().getY() < 0.0
