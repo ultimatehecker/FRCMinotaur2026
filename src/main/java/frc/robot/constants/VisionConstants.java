@@ -12,8 +12,8 @@ import frc.minolib.vision.CameraConfiguration.CameraLocation;
 public class VisionConstants {
     public static final AprilTagFieldLayout kAprilTagLayout = AprilTagFieldLayout.loadField(AprilTagFields.kDefaultField);
 
-    public static final String kBackLeftCameraName = "bL";
-    public static final String kBackRightCameraName = "bR";
+    public static final String kBackLeftCameraName = "shooterbL";
+    public static final String kBackRightCameraName = "shooterbR";
 
     public static final CameraConfiguration kBackLeftConfiguration = new CameraConfiguration()
             .withCameraName(kBackLeftCameraName)
