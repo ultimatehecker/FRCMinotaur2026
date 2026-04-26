@@ -8,7 +8,7 @@ public class ControllerConstants {
     public static final SimControllerType kSimControllerType = SimControllerType.XBOX;
     public static final Time kDebounceTimeSeconds = Seconds.of(0.1);
 
-    public static final double kControllerDeadband = 0.1;
+    public static final double kControllerDeadband = 0.05;
 
     public enum SimControllerType {
         XBOX,
