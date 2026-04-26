@@ -204,6 +204,7 @@ public class Robot extends LoggedRobot {
     }
 
     robotContainer.updateOnboardAlerts();
+    robotContainer.getRobotState().updateLogger();
 
     // JIT alert
     jitAlert.set(isJITing());

@@ -55,10 +55,10 @@ import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIOHardware;
 import frc.robot.subsystems.rollers.RollerSystemIOSimulation;
 import frc.robot.subsystems.rollers.RollerSystemIOHardware;
-import frc.robot.subsystems.shooter.flywheel.Shooter;
-import frc.robot.subsystems.shooter.flywheel.ShooterIOHardware;
-import frc.robot.subsystems.shooter.flywheel.ShooterIOSimulation;
-import frc.robot.subsystems.shooter.flywheel.Shooter.SelectedShootingPreset;
+import frc.robot.subsystems.shooter.flywheel.Flywheel;
+import frc.robot.subsystems.shooter.flywheel.FlywheelIOHardware;
+import frc.robot.subsystems.shooter.flywheel.FlywheelIOSimulation;
+import frc.robot.subsystems.shooter.flywheel.Flywheel.SelectedShootingPreset;
 import frc.robot.subsystems.shooter.hood.Hood;
 import frc.robot.subsystems.shooter.hood.HoodIOHardware;
 import frc.robot.subsystems.shooter.hood.HoodIOSimulation;
@@ -87,7 +87,7 @@ public class RobotContainer {
   private Intake intake;
   private Indexer indexer;
   private Tower tower;
-  private Shooter shooter;
+  private Flywheel flywheel;
   private Hood hood;
   private Elevator elevator;
   private Vision vision;
@@ -174,14 +174,14 @@ public class RobotContainer {
     }
   }
 
-  private Shooter buildShooter() {
+  private Flywheel buildShooter() {
     if(Robot.isSimulation()) {
-      return new Shooter(
-        new ShooterIOSimulation()
+      return new Flywheel(
+        new FlywheelIOSimulation()
       );
     } else {
-      return new Shooter(
-        new ShooterIOHardware()
+      return new Flywheel(
+        new FlywheelIOHardware()
       );
     }
   }
@@ -234,12 +234,16 @@ public class RobotContainer {
    return intake;
   }
 
+  public RobotState getRobotState() {
+    return robotState;
+  }
+
   public RobotContainer() {
     drivetrain = buildDrivetrain();
     intake = buildIntake();
     indexer = buildIndexer();
     tower = buildTower();
-    shooter = buildShooter();
+    flywheel = buildShooter();
     hood = buildHood();
     elevator = buildElevator();
     vision = buildVision();
@@ -247,7 +251,7 @@ public class RobotContainer {
     intake.setBrakeMode(() -> !coastOverride);
     indexer.setBrakeMode(() -> !coastOverride);
     tower.setBrakeMode(() -> !coastOverride);
-    shooter.setBrakeMode(() -> !coastOverride);
+    flywheel.setBrakeMode(() -> !coastOverride);
     elevator.setBrakeMode(() -> !coastOverride);
 
     HubShiftUtility.setAllianceWinOverride(() -> {
@@ -279,7 +283,7 @@ public class RobotContainer {
   private void configureNamedCommands() {
     NamedCommands.registerCommand(
       "Shooting OL Sequence Close", 
-      Commands.runOnce(() -> shooter.setShootingPreset(SelectedShootingPreset.CLOSE)).andThen(
+      Commands.runOnce(() -> flywheel.setShootingPreset(SelectedShootingPreset.CLOSE)).andThen(
         Commands.parallel(
           Commands.sequence(
             Commands.waitSeconds(1),
@@ -290,9 +294,9 @@ public class RobotContainer {
             )
           ),
           Commands.runEnd(
-            () -> shooter.runVoltage(shooter.getPreset().getData().getVoltageSetpoint()), 
-            () -> shooter.stop(),
-            shooter
+            () -> flywheel.runVoltage(flywheel.getPreset().getData().getVoltageSetpoint()), 
+            () -> flywheel.stop(),
+            flywheel
           ),
           Commands.runEnd(
               () -> indexer.setGoal(IndexerGoal.FEED), 
@@ -300,7 +304,7 @@ public class RobotContainer {
               indexer
           ),
           Commands.runEnd(
-            () -> hood.setAngle(shooter.getPreset().getData().getHoodAngleDegrees()), 
+            () -> hood.setAngle(flywheel.getPreset().getData().getHoodAngleDegrees()), 
             () -> hood.setAngle(12.0), 
             hood
           )
@@ -312,7 +316,7 @@ public class RobotContainer {
 
     NamedCommands.registerCommand(
       "Shooting OL Sequence Medium", 
-      Commands.runOnce(() -> shooter.setShootingPreset(SelectedShootingPreset.MEDIUM)).andThen(
+      Commands.runOnce(() -> flywheel.setShootingPreset(SelectedShootingPreset.MEDIUM)).andThen(
         Commands.parallel(
           Commands.sequence(
             Commands.waitSeconds(1),
@@ -323,9 +327,9 @@ public class RobotContainer {
             )
           ),
           Commands.runEnd(
-            () -> shooter.runVoltage(shooter.getPreset().getData().getVoltageSetpoint()), 
-            () -> shooter.stop(),
-            shooter
+            () -> flywheel.runVoltage(flywheel.getPreset().getData().getVoltageSetpoint()), 
+            () -> flywheel.stop(),
+            flywheel
           ),
           Commands.runEnd(
               () -> indexer.setGoal(IndexerGoal.FEED), 
@@ -333,7 +337,7 @@ public class RobotContainer {
               indexer
           ),
           Commands.runEnd(
-            () -> hood.setAngle(shooter.getPreset().getData().getHoodAngleDegrees()), 
+            () -> hood.setAngle(flywheel.getPreset().getData().getHoodAngleDegrees()), 
             () -> hood.setAngle(12.0), 
             hood
           )
@@ -397,9 +401,9 @@ public class RobotContainer {
             IntakeFactory.stowCommand(this)
           ),
           Commands.runEnd(
-            () -> shooter.runVelocity(shooter.getPreset().getData().getFlywheelSpeedRPM()), 
-            () -> shooter.stop(),
-            shooter
+            () -> flywheel.runVelocity(flywheel.getPreset().getData().getFlywheelSpeedRPM()), 
+            () -> flywheel.stop(),
+            flywheel
           ),
           Commands.runEnd(
               () -> indexer.setGoal(IndexerGoal.FEED), 
@@ -407,7 +411,7 @@ public class RobotContainer {
               indexer
           ),
           Commands.runEnd(
-            () -> hood.setAngle(shooter.getPreset().getData().getHoodAngleDegrees()), //TODO: Change this later before the practice field, 
+            () -> hood.setAngle(flywheel.getPreset().getData().getHoodAngleDegrees()), //TODO: Change this later before the practice field, 
             () -> hood.setAngle(12), 
             hood
           )
@@ -460,15 +464,15 @@ public class RobotContainer {
   private void configureOperatorBindings() {
     controlboard
       .selectCloseShootingPreset()
-      .onTrue(Commands.runOnce(() -> shooter.setShootingPreset(SelectedShootingPreset.CLOSE)));
+      .onTrue(Commands.runOnce(() -> flywheel.setShootingPreset(SelectedShootingPreset.CLOSE)));
 
     controlboard
       .selectMediumShootingPreset()
-      .onTrue(Commands.runOnce(() -> shooter.setShootingPreset(SelectedShootingPreset.MEDIUM)));
+      .onTrue(Commands.runOnce(() -> flywheel.setShootingPreset(SelectedShootingPreset.MEDIUM)));
 
     controlboard
       .selectFarShootingPreset()
-      .onTrue(Commands.runOnce(() -> shooter.setShootingPreset(SelectedShootingPreset.FAR)));
+      .onTrue(Commands.runOnce(() -> flywheel.setShootingPreset(SelectedShootingPreset.FAR)));
 
     controlboard
       .deployClimber()
