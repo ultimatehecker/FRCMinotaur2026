@@ -16,8 +16,10 @@ import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
+import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -47,7 +49,7 @@ public class HoodIOHardware implements HoodIO {
     private final StatusSignal<Boolean> temperatureFault;
 
     private final TorqueCurrentFOC torqueCurrentRequest = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
-    private final PositionTorqueCurrentFOC positionTorqueCurrentRequest = new PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
+    private final MotionMagicTorqueCurrentFOC motionMagicTorqueCurrentRequest = new MotionMagicTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
     private final VoltageOut voltageRequest = new VoltageOut(0.0).withUpdateFreqHz(0.0);
 
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
@@ -66,10 +68,16 @@ public class HoodIOHardware implements HoodIO {
                     .withPeakReverseTorqueCurrent(-120.0)
             ).withCurrentLimits(
                 new CurrentLimitsConfigs()
-                    .withStatorCurrentLimitEnable(true)
-                    .withStatorCurrentLimit(HoodConstants.kMotorStatorLimit)
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(HoodConstants.kMotorSupplyLimit)
+            ).withSlot0(
+                new Slot0Configs()
+                    .withKP(HoodConstants.kP)
+                    .withKI(HoodConstants.kI)
+                    .withKD(HoodConstants.kD)
+                    .withKS(HoodConstants.kS)
+                    .withKV(HoodConstants.kV)
+                    .withKA(HoodConstants.kA)
             ).withFeedback(
                 new FeedbackConfigs()
                     .withSensorToMechanismRatio(HoodConstants.kMotorReduction)
@@ -131,19 +139,22 @@ public class HoodIOHardware implements HoodIO {
     }
 
     @Override
-    public void setPosition(double positionRadians, double feedforward) {
+    public void setPosition(double positionRadians) {
         motor.setControl(
-            positionTorqueCurrentRequest
+            motionMagicTorqueCurrentRequest
                 .withPosition(Units.radiansToRotations(positionRadians))
-                .withFeedForward(feedforward)
+                .withFeedForward(0.0)
         );
     }
 
     @Override
-    public void setPID(double kP, double kI, double kD) {
+    public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
         motorConfiguration.Slot0.kP = kP;
         motorConfiguration.Slot0.kI = kI;
         motorConfiguration.Slot0.kD = kD;
+        motorConfiguration.Slot0.kS = kS;
+        motorConfiguration.Slot0.kV = kV;
+        motorConfiguration.Slot0.kA = kA;
 
         simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration));
     }
