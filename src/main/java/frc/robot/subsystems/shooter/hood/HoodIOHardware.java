@@ -84,7 +84,6 @@ public class HoodIOHardware implements HoodIO {
             );
 
         simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.25));
-        simpleTryUntilOk(5, () -> motor.setPosition(HoodConstants.kHoodMinimumPosition.in(Rotations)));
 
         position = motor.getPosition();
         velocity = motor.getVelocity();
@@ -149,7 +148,7 @@ public class HoodIOHardware implements HoodIO {
 
     @Override
     public void resetPosition() {
-        motor.setPosition(HoodConstants.kHoodMinimumPosition.in(Rotations), 0.0);
+        motor.setPosition(HoodConstants.kHoodZeoredPosition.in(Rotations), 0.0);
     }
 
     @Override
