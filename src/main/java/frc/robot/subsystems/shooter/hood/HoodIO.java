@@ -27,6 +27,8 @@ public interface HoodIO extends SubsystemDataProcessor.IODataRefresher {
 
     public void setPosition(double position);
 
+    public void resetPosition();
+
     public void setPID(double kP, double kI, double kD, double kS, double kV, double kA);
 
     public default void setBrakeMode(boolean enabled) {}

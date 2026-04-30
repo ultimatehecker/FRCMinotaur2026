@@ -148,6 +148,11 @@ public class HoodIOHardware implements HoodIO {
     }
 
     @Override
+    public void resetPosition() {
+        motor.setPosition(HoodConstants.kHoodMinimumPosition.in(Rotations), 0.0);
+    }
+
+    @Override
     public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
         motorConfiguration.Slot0.kP = kP;
         motorConfiguration.Slot0.kI = kI;

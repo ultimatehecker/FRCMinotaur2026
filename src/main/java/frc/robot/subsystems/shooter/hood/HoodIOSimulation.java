@@ -101,7 +101,7 @@ public class HoodIOSimulation implements HoodIO {
     }
 
     @Override
-    public void setPosition(double position, double feedforward) {
+    public void setPosition(double position) {
         if (!hoodClosedLoop) {
             hoodControllerNeedsReset = true;
             hoodClosedLoop = true;
@@ -111,11 +111,16 @@ public class HoodIOSimulation implements HoodIO {
             hoodControllerNeedsReset = false;
         }
 
-        setVoltage(hoodPositionController.calculate(hoodSimulation.getAngleRads(), position) + feedforward);
+        setVoltage(hoodPositionController.calculate(hoodSimulation.getAngleRads(), position));
     }
 
     @Override
-    public void setPID(double kP, double kI, double kD) {
+    public void resetPosition() {
+
+    }
+
+    @Override
+    public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
         hoodPositionController.setPID(kP, kI, kD);
     }
 

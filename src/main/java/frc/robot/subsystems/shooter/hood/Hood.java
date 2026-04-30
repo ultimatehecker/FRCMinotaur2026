@@ -1,9 +1,11 @@
 package frc.robot.subsystems.shooter.hood;
 
 import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Radians;
 
 import java.util.function.BooleanSupplier;
 
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.MathUtil;
@@ -11,11 +13,16 @@ import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
 import frc.minolib.utilities.SubsystemDataProcessor;
+import frc.minolib.math.EqualsUtility;
 import frc.robot.Robot;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.HoodConstants;
@@ -23,33 +30,20 @@ import frc.robot.constants.HoodConstants;
 import lombok.Getter;
 
 public class Hood extends SubsystemBase {
-    private static final LoggedTunableNumber kP = new LoggedTunableNumber("Hood/kP");
-    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Hood/kD");
-    private static final LoggedTunableNumber kS = new LoggedTunableNumber("Hood/kS");
-    private static final LoggedTunableNumber kG = new LoggedTunableNumber("Hood/kG");
-    private static final LoggedTunableNumber kV = new LoggedTunableNumber("Hood/kV");
-    private static final LoggedTunableNumber kA = new LoggedTunableNumber("Hood/kA");
+    private static final LoggedTunableNumber kP = new LoggedTunableNumber("Hood/Gains/kP");
+    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Hood/Gains/kD");
+    private static final LoggedTunableNumber kS = new LoggedTunableNumber("Hood/Gains/kS");
+    private static final LoggedTunableNumber kV = new LoggedTunableNumber("Hood/Gains/kV");
+    private static final LoggedTunableNumber kA = new LoggedTunableNumber("Hood/Gains/kA");
 
-    private static final LoggedTunableNumber kMinimumAngleDegrees = new LoggedTunableNumber("Hood/MinimumAngle", HoodConstants.kHoodMinimumPosition.in(Degrees));
-    private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Hood/MaximumAngle", HoodConstants.kHoodMaximumPosition.in(Degrees));
+    private static final LoggedTunableNumber kMinimumAngleDegrees = new LoggedTunableNumber("Hood/MinimumAngleDegrees", HoodConstants.kHoodMinimumPosition.in(Degrees));
+    private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Hood/MaximumAngleDegrees", HoodConstants.kHoodMaximumPosition.in(Degrees));
+    
+    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Hood/Homing/Voltage", -2);
+    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Hood/Homing/VelocityThreshold", 0.05);
 
-    private static final LoggedTunableNumber toleranceDegrees = new LoggedTunableNumber("Hood/ToleranceDegrees", 2.0);
+    private static final LoggedTunableNumber toleranceDegrees = new LoggedTunableNumber("Hood/ToleranceDegrees", 1.0);
     private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Hood/ReadyDebounceSeconds", 0.08);
-
-    public enum HoodGoal {
-        IDLE,
-        STOW,
-        AIM,
-        HOME
-    }
-
-    public enum HoodState {
-        IDLE,
-        STOWING,
-        MOVING_TO_ANGLE,
-        AT_ANGLE,
-        HOMING
-    }
 
     static {
         switch (GlobalConstants.getRobot()) {
@@ -58,7 +52,6 @@ public class Hood extends SubsystemBase {
                 kD.initDefault(HoodConstants.kD);
                 kS.initDefault(HoodConstants.kD);
                 kV.initDefault(HoodConstants.kV);
-                kG.initDefault(HoodConstants.kG);
                 kA.initDefault(HoodConstants.kA);
             }
 
@@ -67,13 +60,6 @@ public class Hood extends SubsystemBase {
                 kD.initDefault(0.0);
                 kS.initDefault(0.0);
                 kV.initDefault(0.0);
-                kG.initDefault(0.0);
-                kA.initDefault(0.0);
-                kP.initDefault(0.0);
-                kD.initDefault(0.0);
-                kS.initDefault(0.0);
-                kV.initDefault(0.0);
-                kG.initDefault(0.0);
                 kA.initDefault(0.0);
             }
         }
@@ -86,9 +72,10 @@ public class Hood extends SubsystemBase {
     private final Alert motorDisconnectedAlert = new Alert("The hood motor is disconnected!", AlertType.kError);
     private final Alert motorOverheatingAlert = new Alert("The hood motor is overheating!", AlertType.kWarning);
 
-    @Getter private HoodGoal goal = HoodGoal.IDLE;
-    @Getter private HoodState state = HoodState.IDLE;
-    @Getter private double targetDegrees = 0.0;
+    @Getter private boolean zeroed = false;
+    private double targetAngleRadians = HoodConstants.kHoodMinimumPosition.in(Radians);
+
+    private final Command homingCommand;
 
     private final Debouncer readyDebouncer = new Debouncer(readyDebounceSeconds.get(), Debouncer.DebounceType.kFalling);
 
@@ -99,8 +86,7 @@ public class Hood extends SubsystemBase {
             synchronized (inputs) {
                 io.updateInputs(inputs);
             }
-        },
-        io);
+        }, io);
     }
 
     @Override
@@ -111,98 +97,72 @@ public class Hood extends SubsystemBase {
     
         motorDisconnectedAlert.set(!motorConnectedDebouncer.calculate(inputs.isMotorConnected) && !Robot.isJITing());
         motorOverheatingAlert.set(inputs.temperatureFault);
-        motorOverheatingAlert.set(inputs.temperatureFault);
+
+        Robot.batteryLogger.reportCurrentUsage("Hood", inputs.isMotorConnected ? inputs.supplyCurrentAmperes : 0.0);
 
         // Update tunable numbers
-        if (kP.hasChanged(hashCode()) || kD.hasChanged(hashCode())) {
-            io.setPID(kP.get(), 0.0, kD.get());
+        if (kP.hasChanged(hashCode()) || kD.hasChanged(hashCode()) || kS.hasChanged(hashCode()) || kV.hasChanged(hashCode()) || kA.hasChanged(hashCode())) {
+            io.setPID(kP.get(), 0.0, kD.get(), kS.get(), kV.get(), kA.get());
         }
 
         if (readyDebounceSeconds.hasChanged(hashCode())) {
             readyDebouncer.setDebounceTime(readyDebounceSeconds.get());
         }
 
-        state = handleStateTransition();
-        applyState();
-
-        Logger.recordOutput("Hood/Goal", goal.toString());
-        Logger.recordOutput("Hood/State", state.toString());
+        Logger.recordOutput("Hood/Homed", homed);
+        Logger.recordOutput("Hood/TargetAngleDegrees", Units.radiansToDegrees(targetAngleRadians));
+        Logger.recordOutput("Hood/MeasuredAngleDegrees", Units.radiansToDegrees(inputs.positionRadians));
+        Logger.recordOutput("Hood/AtTarget", atTarget());
+        Logger.recordOutput("Hood/IsReady", isReady());
+        
+        SmartDashboard.putBoolean("Hood At Min Angle", EqualsUtility.epsilonEquals(inputs.positionRadians, Units.degreesToRadians(kMinimumAngleDegrees.get())));
         
         LoggedTracer.record("HoodPeriodic");
     }
 
-    private HoodState handleStateTransition() {
-        return switch (goal) {
-            case IDLE -> HoodState.IDLE;
-            case STOW -> atTarget(kMinimumAngleDegrees.get()) ? HoodState.AT_ANGLE : HoodState.STOWING;
-            case AIM -> atTarget(targetDegrees) ? HoodState.AT_ANGLE : HoodState.MOVING_TO_ANGLE;
-            case HOME -> HoodState.HOMING;
-        };
+    @AutoLogOutput(key = "Hood/MeasuredAngleRads")
+    public double getMeasuredAngleRad() {
+        return inputs.positionRadians;
     }
 
-    private void applyState() {
-        switch (state) {    
-            case IDLE -> io.stop();
-            case STOWING -> {
-                io.setPosition(
-                    MathUtil.clamp(
-                        Units.degreesToRadians(kMinimumAngleDegrees.get()), 
-                        Units.degreesToRadians(kMinimumAngleDegrees.get()), 
-                        Units.degreesToRadians(kMaximumAngleDegrees.get())
-                    ), 
-                    0.0
-                );
-            }
-
-            case MOVING_TO_ANGLE, AT_ANGLE ->  {
-                io.setPosition(
-                    MathUtil.clamp(
-                        Units.degreesToRadians(targetDegrees), 
-                        Units.degreesToRadians(kMinimumAngleDegrees.get()), 
-                        Units.degreesToRadians(kMaximumAngleDegrees.get())
-                    ), 
-                    0.0
-                );
-            }
-            case HOMING -> {
-
-            }
-        }
+    @AutoLogOutput
+    public boolean atGoal() {
+        return DriverStation.isEnabled() && zeroed && Math.abs(getMeasuredAngleRad() - goalAngle) <= Units.degreesToRadians(toleranceDegrees.get());
     }
 
-    public void setBrakeMode(BooleanSupplier enabled) {
-        io.setBrakeMode(enabled.getAsBoolean());
-    }
+    private Command buildHomingCommand() {
+        return Commands.sequence(
+            Commands.runOnce(() -> {
+                zeroed = false;
+                homingDebouncer = new Debouncer(homingTimeoutSecs.get(), Debouncer.DebounceType.kRising);
+                homingDebouncer.calculate(false); // seed false
+                targetAngleRadians = Double.NaN;
+            }),
 
-    public void setGoal(HoodGoal goal) {
-        this.goal = goal;
-    }
+            Commands.run(() -> {
+                synchronized (inputs) {
+                    io.setVoltage(kHomingVoltage.get());
+                }
+            })
+            .until(() -> {
+                synchronized (inputs) {
+                    return homingDebouncer.calculate(
+                        Math.abs(inputs.velocityRadiansPerSecond) <= kHomingVelocityThreshold.get() && Math.abs(inputs.appliedVoltage) >= Math.abs(homingVolts.get()) * 0.7);
+                }
+            })
+            .withTimeout(3.0), // safety — don't grind forever
 
-    public void setAngle(double angleDegrees) {
-        this.goal = HoodGoal.AIM;
-        this.targetDegrees = angleDegrees;
-    }
-
-    public void stow() {
-        this.goal = HoodGoal.STOW;
-    }
-
-    public void stop() {
-        this.goal = HoodGoal.IDLE;
-        this.targetDegrees = 0.0;
-
-        readyDebouncer.calculate(false);
-    }
-
-    private boolean atTarget(double targetDegrees) {
-        return Math.abs(inputs.positionRadians - Units.degreesToRadians(targetDegrees)) <= Units.degreesToRadians(toleranceDegrees.get());
-    }
-
-    public boolean atSetpoint() {
-        return state == HoodState.AT_ANGLE;
-    }
-
-    public boolean isReady() {
-        return readyDebouncer.calculate(atSetpoint());
+            // Zero encoder at the hard stop = minimum angle
+            Commands.runOnce(() -> {
+                synchronized (inputs) {
+                    io.setEncoderPosition(
+                        Units.degreesToRotations(kMinAngleDegrees.get()));
+                }
+                homed = true;
+                stow(); // immediately command away from hard stop
+            })
+        )
+        .withName("Hood_Homing")
+        .ignoringDisable(false);
     }
 }
