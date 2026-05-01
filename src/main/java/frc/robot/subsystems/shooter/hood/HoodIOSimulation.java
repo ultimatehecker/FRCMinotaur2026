@@ -54,10 +54,10 @@ public class HoodIOSimulation implements HoodIO {
             HoodConstants.kMotorReduction,
             HoodConstants.kHoodMOI.in(KilogramSquareMeters),
             HoodConstants.kHoodLength.in(Meters),
-            HoodConstants.kHoodMinimumPosition.in(Radians),
+            HoodConstants.kHoodZeoredPosition.in(Radians),
             HoodConstants.kHoodMaximumPosition.in(Radians),
             true, 
-            HoodConstants.kHoodStartingPosition.in(Radians)
+            HoodConstants.kHoodMinimumPosition.in(Radians)
         );
     }
 
