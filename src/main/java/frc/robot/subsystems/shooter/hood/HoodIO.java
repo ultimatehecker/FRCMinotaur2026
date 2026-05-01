@@ -2,9 +2,7 @@ package frc.robot.subsystems.shooter.hood;
 
 import org.littletonrobotics.junction.AutoLog;
 
-import frc.minolib.utilities.SubsystemDataProcessor;
-
-public interface HoodIO extends SubsystemDataProcessor.IODataRefresher {
+public interface HoodIO {
     @AutoLog
     public class HoodIOInputs {
         public boolean isMotorConnected = false;
@@ -32,7 +30,4 @@ public interface HoodIO extends SubsystemDataProcessor.IODataRefresher {
     public void setPID(double kP, double kI, double kD, double kS, double kV, double kA);
 
     public default void setBrakeMode(boolean enabled) {}
-
-    @Override
-    public void refreshData();
 }

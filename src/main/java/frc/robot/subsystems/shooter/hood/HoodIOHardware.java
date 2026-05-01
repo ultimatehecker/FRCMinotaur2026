@@ -33,6 +33,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import frc.minolib.phoenix.PhoenixUtility;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.HoodConstants;
 
@@ -107,7 +108,17 @@ public class HoodIOHardware implements HoodIO {
             )
         );
 
-        motor.optimizeBusUtilization(0.0, 1.0);
+        simpleTryUntilOk(5, () -> motor.optimizeBusUtilization(0.0, 1.0));
+
+        PhoenixUtility.registerSignals(
+            false, 
+            position,
+            velocity,
+            appliedVoltage,
+            supplyCurrent,
+            temperature,
+            temperatureFault
+        );
     }
 
     @Override
@@ -168,18 +179,5 @@ public class HoodIOHardware implements HoodIO {
         brakeModeExecutor.execute(() -> {
             motor.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
         });
-    }
-
-    @Override
-    public void refreshData() {
-        BaseStatusSignal.refreshAll(
-            position, 
-            velocity,
-            appliedVoltage,
-            torqueCurrent,
-            supplyCurrent,
-            temperature,
-            temperatureFault
-        );
     }
 }

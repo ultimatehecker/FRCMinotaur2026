@@ -78,6 +78,8 @@ public class HoodIOSimulation implements HoodIO {
 
         Logger.recordOutput("Hood/Mechanism2d", mechanism);
         pivotLigament.setAngle(Math.toDegrees(hoodSimulation.getAngleRads()));
+
+        hoodSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
 
     @Override
@@ -122,10 +124,5 @@ public class HoodIOSimulation implements HoodIO {
     @Override
     public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
         hoodPositionController.setPID(kP, kI, kD);
-    }
-
-    @Override
-    public void refreshData() {
-        hoodSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
 }
