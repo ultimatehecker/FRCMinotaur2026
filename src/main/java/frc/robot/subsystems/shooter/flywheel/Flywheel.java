@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
-import frc.minolib.utilities.SubsystemDataProcessor;
 import frc.robot.Robot;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.GlobalConstants;
@@ -134,19 +133,12 @@ public class Flywheel extends SubsystemBase {
 
     public Flywheel(FlywheelIO io) {
         this.io = io;
-
-        SubsystemDataProcessor.createAndStartSubsystemDataProcessor(() -> {
-            synchronized (inputs) {
-                io.updateInputs(inputs);
-            }
-        }, io);
     }
 
     @Override
     public void periodic() {
-        synchronized (inputs) {
-            Logger.processInputs("Shooter", inputs);
-        }
+        io.updateInputs(inputs);
+        Logger.processInputs("Shooter", inputs);
 
         if (kP.hasChanged(hashCode())) {
             io.setPID(kP.get(), 0.0, 0.0);

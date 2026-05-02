@@ -33,7 +33,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
-
+import frc.minolib.phoenix.PhoenixUtility;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.ShooterConstants;
 
@@ -150,10 +150,30 @@ public class FlywheelIOHardware implements FlywheelIO {
             fourthShooterTemperatureFault
         ));
 
-        firstShooterMotor.optimizeBusUtilization(0.0, 1.0);
-        secondShooterMotor.optimizeBusUtilization(0.0, 1.0);
-        thirdShooterMotor.optimizeBusUtilization(0.0, 1.0);
-        fourthShooterMotor.optimizeBusUtilization(0.0, 1.0);
+        simpleTryUntilOk(5, () -> firstShooterMotor.optimizeBusUtilization(0.0, 1.0));
+        simpleTryUntilOk(5, () -> secondShooterMotor.optimizeBusUtilization(0.0, 1.0));
+        simpleTryUntilOk(5, () -> thirdShooterMotor.optimizeBusUtilization(0.0, 1.0));
+        simpleTryUntilOk(5, () -> fourthShooterMotor.optimizeBusUtilization(0.0, 1.0));
+
+        PhoenixUtility.registerSignals(
+            false, 
+            firstShooterPosition,
+            firstShooterVelocity,
+            firstShooterAppliedVoltage,
+            firstShooterSupplyCurrent,
+            firstShooterTorqueCurrent,
+            firstShooterTemperature,
+            firstShooterTemperatureFault,
+            secondShooterSupplyCurrent,
+            secondShooterTemperature,
+            secondhooterTemperatureFault,
+            thirdShooterSupplyCurrent,
+            thirdShooterTemperature,
+            thirdShooterTemperatureFault,
+            fourthShooterSupplyCurrent,
+            fourthShooterTemperature,
+            fourthShooterTemperatureFault
+        );
     }
 
     @Override
@@ -238,27 +258,5 @@ public class FlywheelIOHardware implements FlywheelIO {
         brakeModeExecutor.execute(() -> {
             firstShooterMotor.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
         });
-    }
-
-    @Override
-    public void refreshData() {
-        BaseStatusSignal.refreshAll(
-            firstShooterPosition,
-            firstShooterVelocity,
-            firstShooterAppliedVoltage,
-            firstShooterSupplyCurrent,
-            firstShooterTorqueCurrent,
-            firstShooterTemperature,
-            firstShooterTemperatureFault,
-            secondShooterSupplyCurrent,
-            secondShooterTemperature,
-            secondhooterTemperatureFault,
-            thirdShooterSupplyCurrent,
-            thirdShooterTemperature,
-            thirdShooterTemperatureFault,
-            fourthShooterSupplyCurrent,
-            fourthShooterTemperature,
-            fourthShooterTemperatureFault
-        );
     }
 }

@@ -61,6 +61,8 @@ public class FlywheelIOSimulation implements FlywheelIO {
         inputs.fourthShooterSupplyCurrentAmperes = shooterSimulation.getCurrentDrawAmps();
         inputs.fourthShooterTempuratureCelcius = 0.0;
         inputs.fourthShooterTempuratureFault = false;
+
+        shooterSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
 
     @Override
@@ -93,10 +95,5 @@ public class FlywheelIOSimulation implements FlywheelIO {
     @Override
     public void stop() {
         setVoltage(0.0);
-    }
-
-    @Override
-    public void refreshData() {
-        shooterSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
 }

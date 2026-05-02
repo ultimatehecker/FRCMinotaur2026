@@ -2,9 +2,7 @@ package frc.robot.subsystems.shooter.flywheel;
 
 import org.littletonrobotics.junction.AutoLog;
 
-import frc.minolib.utilities.SubsystemDataProcessor;
-
-public interface FlywheelIO extends SubsystemDataProcessor.IODataRefresher {
+public interface FlywheelIO {
     @AutoLog
     public class FlywheelIOInputs {
         public boolean isFirstShooterConnected = false;
@@ -45,7 +43,4 @@ public interface FlywheelIO extends SubsystemDataProcessor.IODataRefresher {
     public void setPID(double kP, double kI, double kD);
 
     public default void setBrakeMode(boolean enabled) {}
-
-    @Override
-    public void refreshData();
 }
