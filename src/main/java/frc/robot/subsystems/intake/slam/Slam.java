@@ -5,21 +5,17 @@ import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.geometry.Pose3d;
-import edu.wpi.first.math.geometry.Rotation3d;
-import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
+
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
 import frc.minolib.math.EqualsUtility;
-import frc.minolib.utilities.SubsystemDataProcessor;
 import frc.robot.Robot;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.IntakeConstants;
@@ -106,13 +102,6 @@ public class Slam {
     public Slam(SlamIO io) {
         this.io = io;
 
-        SubsystemDataProcessor.createAndStartSubsystemDataProcessor(() -> {
-            synchronized (inputs) {
-                io.updateInputs(inputs);
-            }
-        },
-        io);
-
         profile = new TrapezoidProfile(
             new TrapezoidProfile.Constraints(kMaximumVelocityRadiansPerSecond.get(), kMaximumAccelerationRadiansPerSecond2.get())
         );
@@ -121,9 +110,8 @@ public class Slam {
     }
 
     public void periodic() {
-        synchronized (inputs) {
-            Logger.processInputs("Intake/Slam", inputs);
-        }
+        io.updateInputs(inputs);
+        Logger.processInputs("Intake/Slam", inputs);
 
         motorDisconnectedAlert.set(!motorConnectedDebouncer.calculate(inputs.isMotorConnected) && !Robot.isJITing());
         motorTemperatureAlert.set(inputs.temperatureFault);

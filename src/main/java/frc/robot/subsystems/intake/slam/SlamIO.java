@@ -2,9 +2,7 @@ package frc.robot.subsystems.intake.slam;
 
 import org.littletonrobotics.junction.AutoLog;
 
-import frc.minolib.utilities.SubsystemDataProcessor;
-
-public interface SlamIO extends SubsystemDataProcessor.IODataRefresher {
+public interface SlamIO {
     @AutoLog
     public class SlamIOInputs {
         public boolean isMotorConnected = false;
@@ -30,7 +28,4 @@ public interface SlamIO extends SubsystemDataProcessor.IODataRefresher {
     public default void setPID(double kP, double kI, double kD) {}
 
     public default void setBrakeMode(boolean enabled) {}
-
-    @Override
-    public void refreshData();
 }

@@ -34,6 +34,7 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import frc.minolib.phoenix.PhoenixUtility;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.IntakeConstants;
 
@@ -116,8 +117,19 @@ public class SlamIOHardware implements SlamIO {
             )
         );
 
-        motor.optimizeBusUtilization(0.0, 1.0);
-        encoder.optimizeBusUtilization(0.0, 1.0);
+        simpleTryUntilOk(5, () -> motor.optimizeBusUtilization(0.0, 1.0));
+        simpleTryUntilOk(5, () -> encoder.optimizeBusUtilization(0.0, 1.0));
+
+        PhoenixUtility.registerSignals(
+            false, 
+            position, 
+            velocity,
+            appliedVoltage,
+            torqueCurrent,
+            supplyCurrent,
+            temperature,
+            temperatureFault
+        );
     }
 
     @Override
@@ -170,18 +182,5 @@ public class SlamIOHardware implements SlamIO {
         brakeModeExecutor.execute(() -> {
             motor.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
         });
-    }
-
-    @Override
-    public void refreshData() {
-        BaseStatusSignal.refreshAll(
-            position, 
-            velocity,
-            appliedVoltage,
-            torqueCurrent,
-            supplyCurrent,
-            temperature,
-            temperatureFault
-        );
     }
 }

@@ -17,7 +17,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
 import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj.util.Color8Bit;
-import frc.minolib.math.MathUtility;
+
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.IntakeConstants;
 
@@ -44,16 +44,6 @@ public class SlamIOSimulation implements SlamIO {
             IntakeConstants.kIntakeMinimumPosition.in(Degrees),
             4,
             new Color8Bit(Color.kMaroon)
-        )
-    );
-
-    private final LoggedMechanismLigament2d rollerLigament = pivotLigament.append(
-        new LoggedMechanismLigament2d(
-            "Roller",
-            IntakeConstants.kIntakeLength.in(Meters) * 0.15,
-            90.0, 
-            6,
-            new Color8Bit(Color.kYellow) 
         )
     );
 
@@ -88,6 +78,8 @@ public class SlamIOSimulation implements SlamIO {
 
         Logger.recordOutput("Intake/Mechanism2d", mechanism);
         pivotLigament.setAngle(Math.toDegrees(pivotSimulation.getAngleRads()));
+
+        pivotSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
 
     @Override
@@ -126,10 +118,5 @@ public class SlamIOSimulation implements SlamIO {
     @Override
     public void setPID(double kP, double kI, double kD) {
         pivotController.setPID(kP, kI, kD);
-    }
-
-    @Override
-    public void refreshData() {
-        pivotSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
 }
