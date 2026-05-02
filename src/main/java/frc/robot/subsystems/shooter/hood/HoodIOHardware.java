@@ -153,6 +153,7 @@ public class HoodIOHardware implements HoodIO {
         motor.setControl(
             motionMagicTorqueCurrentRequest
                 .withPosition(Units.radiansToRotations(positionRadians))
+                .withOverrideCoastDurNeutral(false)
                 .withFeedForward(0.0)
         );
     }

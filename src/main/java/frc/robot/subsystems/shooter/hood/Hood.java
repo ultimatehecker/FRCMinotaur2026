@@ -22,7 +22,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
-import frc.minolib.utilities.SubsystemDataProcessor;
 import frc.minolib.math.EqualsUtility;
 import frc.robot.Robot;
 import frc.robot.constants.GlobalConstants;
@@ -77,6 +76,12 @@ public class Hood extends SubsystemBase {
     private final Alert motorDisconnectedAlert = new Alert("The hood motor is disconnected!", AlertType.kError);
     private final Alert motorOverheatingAlert = new Alert("The hood motor is overheating!", AlertType.kWarning);
 
+    private BooleanSupplier coastOverride = () -> false;
+    private BooleanSupplier disabledOverride = () -> false;
+
+    @AutoLogOutput(key = "Hood/BrakeModeEnabled") 
+    private boolean brakeModeEnabled = false;
+
     @Getter private boolean zeroed = false;
     private double targetAngleRadians = HoodConstants.kHoodMinimumPosition.in(Radians);
 
@@ -85,21 +90,14 @@ public class Hood extends SubsystemBase {
     public Hood(HoodIO io) {
         this.io = io;
 
-        SubsystemDataProcessor.createAndStartSubsystemDataProcessor(() -> {
-            synchronized (inputs) {
-                io.updateInputs(inputs);
-            }
-        }, io);
-
-        zeroCommand = buildZeroingCommand();
+        zeroCommand = zeroCommand();
     }
 
     @Override
     public void periodic() {
-        synchronized (inputs) {
-            Logger.processInputs("Hood", inputs);
-        }
-    
+        io.updateInputs(inputs);
+        Logger.processInputs("Hood", inputs);   
+
         motorDisconnectedAlert.set(!motorConnectedDebouncer.calculate(inputs.isMotorConnected) && !Robot.isJITing());
         motorOverheatingAlert.set(inputs.temperatureFault);
 
@@ -122,6 +120,8 @@ public class Hood extends SubsystemBase {
             CommandScheduler.getInstance().schedule(zeroCommand);
         }
 
+        setBrakeMode(!coastOverride.getAsBoolean()); 
+
         if (!Double.isNaN(targetAngleRadians) && zeroed) {
             double restrictedSetpoint = MathUtil.clamp(
                 targetAngleRadians,
@@ -137,6 +137,8 @@ public class Hood extends SubsystemBase {
         Logger.recordOutput("Hood/MeasuredAngleDegrees", Units.radiansToDegrees(inputs.positionRadians));
         Logger.recordOutput("Hood/AtTarget", atTarget());
         Logger.recordOutput("Hood/IsReady", isReady());
+        Logger.recordOutput("Hood/CoastOverride", coastOverride.getAsBoolean());
+        Logger.recordOutput("Hood/DisabledOverride", disabledOverride.getAsBoolean());
         
         SmartDashboard.putBoolean("Hood At Minimum Angle", EqualsUtility.epsilonEquals(inputs.positionRadians, Units.degreesToRadians(kMinimumAngleDegrees.get())));
         
@@ -150,6 +152,17 @@ public class Hood extends SubsystemBase {
 
     public void setAngleDegrees(double degrees) {
         targetAngleRadians = Units.degreesToRadians(degrees);
+    }
+
+    public void setOverrides(BooleanSupplier coastOverride, BooleanSupplier disabledOverride) {
+        this.coastOverride = coastOverride;
+        this.disabledOverride = disabledOverride;
+    }
+
+    private void setBrakeMode(boolean enabled) {
+        if (brakeModeEnabled == enabled) return;
+        brakeModeEnabled = enabled;
+        io.setBrakeMode(brakeModeEnabled);
     }
 
     private void stow() {
@@ -178,30 +191,20 @@ public class Hood extends SubsystemBase {
     }
 
     public Command zeroCommand() {
-        return buildZeroingCommand().withName("Hood_Home");
-    }
-
-    private Command buildZeroingCommand() {
         return Commands.sequence(
             Commands.runOnce(() -> {
                 zeroed = false;
                 homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get(), Debouncer.DebounceType.kRising);
-                homingDebouncer.calculate(false); // seed false
+                homingDebouncer.calculate(false);
                 targetAngleRadians = Double.NaN;
             }),
             Commands.run(() -> {
-                synchronized (inputs) {
-                    io.setVoltage(kHomingVoltage.get());
-                }
+                io.setVoltage(kHomingVoltage.get());
             }).until(() -> {
-                synchronized (inputs) {
                     return homingDebouncer.calculate(Math.abs(inputs.velocityRadiansPerSecond) <= kHomingVelocityThreshold.get() && Math.abs(inputs.appliedVoltage) >= Math.abs(kHomingVoltage.get()) * 0.7);
-                }
             }).withTimeout(3.0),
             Commands.runOnce(() -> {
-                synchronized (inputs) {
-                    io.resetPosition();
-                }
+                io.resetPosition();
 
                 zeroed = true;
                 stow();
