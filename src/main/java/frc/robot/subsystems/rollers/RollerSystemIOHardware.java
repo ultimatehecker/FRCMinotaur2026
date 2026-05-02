@@ -11,7 +11,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import com.ctre.phoenix6.BaseStatusSignal;
-import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
@@ -29,9 +28,9 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
-import frc.minolib.hardware.CANDeviceID;
+
 import frc.minolib.hardware.MinoCANDevice;
-import frc.robot.subsystems.rollers.RollerSystemIO.RollerSystemIOInputs;
+import frc.minolib.phoenix.PhoenixUtility;
 
 public class RollerSystemIOHardware implements RollerSystemIO{
     private final TalonFX motor;
@@ -52,10 +51,7 @@ public class RollerSystemIOHardware implements RollerSystemIO{
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
     private static final Executor currentLimitExecutor = Executors.newFixedThreadPool(1);
 
-    private final double reduction;
-
     public RollerSystemIOHardware(final MinoCANDevice device, double currentLimitAmperes, boolean inverted, boolean brakeEnabled, double reduction) {
-        this.reduction = reduction;
         motor = new TalonFX(device.getDeviceID(), device.getCANBus());
 
         configuration = new TalonFXConfiguration()
@@ -98,6 +94,17 @@ public class RollerSystemIOHardware implements RollerSystemIO{
         );
 
         simpleTryUntilOk(5, () -> motor.optimizeBusUtilization(0, 1.0));
+
+        PhoenixUtility.registerSignals(
+            false, 
+            position,
+            velocity,
+            appliedVoltage,
+            torqueCurrent,
+            supplyCurrent,
+            temperature,
+            temperatureFault
+        );
     }
 
     @Override
@@ -129,7 +136,7 @@ public class RollerSystemIOHardware implements RollerSystemIO{
 
     @Override
     public void setCurrentLimit(double currentLimit) {
-        brakeModeExecutor.execute(() -> {
+        currentLimitExecutor.execute(() -> {
             configuration.withCurrentLimits(configuration.CurrentLimits.withStatorCurrentLimit(currentLimit));
             simpleTryUntilOk(5, () -> motor.getConfigurator().apply(configuration));
         });
@@ -140,18 +147,5 @@ public class RollerSystemIOHardware implements RollerSystemIO{
         brakeModeExecutor.execute(() -> {
             motor.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
         });
-    }
-
-    @Override
-    public void refreshData() {
-        BaseStatusSignal.refreshAll(
-            position,
-            velocity,
-            appliedVoltage,
-            torqueCurrent,
-            supplyCurrent,
-            temperature,
-            temperatureFault
-        );
     }
 }

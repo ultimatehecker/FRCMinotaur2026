@@ -2,9 +2,7 @@ package frc.robot.subsystems.rollers;
 
 import org.littletonrobotics.junction.AutoLog;
 
-import frc.minolib.utilities.SubsystemDataProcessor;
-
-public interface RollerSystemIO extends SubsystemDataProcessor.IODataRefresher {
+public interface RollerSystemIO {
     @AutoLog
     public class RollerSystemIOInputs {
         public boolean isMotorConnected = false;
@@ -29,7 +27,4 @@ public interface RollerSystemIO extends SubsystemDataProcessor.IODataRefresher {
     public default void setCurrentLimit(double currentLimit) {}
 
     public default void setBrakeMode(boolean enabled) {}
-
-    @Override
-    public void refreshData();
 }

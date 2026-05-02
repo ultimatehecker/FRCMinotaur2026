@@ -37,6 +37,8 @@ public class RollerSystemIOSimulation implements RollerSystemIO {
         inputs.torqueCurrentAmperes = rollerGearbox.getCurrent(rollerSimulation.getAngularVelocityRadPerSec(), rollerAppliedVoltage);
         inputs.temperatureCelsius = 0.0; 
         inputs.temperatureFault = false;
+
+        rollerSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
 
     @Override
@@ -56,10 +58,5 @@ public class RollerSystemIOSimulation implements RollerSystemIO {
     @Override
     public void stop() {
         setVoltage(0.0);
-    }
-
-    @Override
-    public void refreshData() {
-        rollerSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
 }
