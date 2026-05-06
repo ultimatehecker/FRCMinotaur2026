@@ -140,8 +140,8 @@ public class Flywheel extends SubsystemBase {
         io.updateInputs(inputs);
         Logger.processInputs("Shooter", inputs);
 
-        if (kP.hasChanged(hashCode())) {
-            io.setPID(kP.get(), 0.0, 0.0);
+        if (kP.hasChanged(hashCode()) || kD.hasChanged(hashCode()) || kS.hasChanged(hashCode()) || kV.hasChanged(hashCode()) || kA.hasChanged(hashCode())) {
+            io.setPID(kP.get(), 0.0, kD.get(), kS.get(), kV.get(), kA.get());
         }
 
         primaryShooterMotorDisconnectedAlert.set(!motorConnectedDebouncer.calculate(inputs.isFirstShooterConnected) && !Robot.isJITing());

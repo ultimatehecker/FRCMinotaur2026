@@ -40,7 +40,7 @@ public interface FlywheelIO {
 
     public void setVelocity(double velocity, double feedforward);
 
-    public void setPID(double kP, double kI, double kD);
+    public void setPID(double kP, double kI, double kD, double kS, double kV, double kA);
 
     public default void setBrakeMode(boolean enabled) {}
 }

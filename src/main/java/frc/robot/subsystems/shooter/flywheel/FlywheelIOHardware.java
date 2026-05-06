@@ -245,10 +245,13 @@ public class FlywheelIOHardware implements FlywheelIO {
     }
 
     @Override
-    public void setPID(double kP, double kI, double kD) {
+    public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
         configuration.Slot0.kP = kP;
         configuration.Slot0.kI = kI;
         configuration.Slot0.kD = kD;
+        configuration.Slot0.kS = kS;
+        configuration.Slot0.kV = kV;
+        configuration.Slot0.kA = kA;
 
         simpleTryUntilOk(5, () -> firstShooterMotor.getConfigurator().apply(configuration, 1.0));
     }

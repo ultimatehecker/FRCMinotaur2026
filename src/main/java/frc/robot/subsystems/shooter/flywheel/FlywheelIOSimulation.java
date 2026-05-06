@@ -88,7 +88,7 @@ public class FlywheelIOSimulation implements FlywheelIO {
     }
 
     @Override
-    public void setPID(double kP, double kI, double kD) {
+    public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
         shooterController.setPID(kP, kI, kD);
     }
 
