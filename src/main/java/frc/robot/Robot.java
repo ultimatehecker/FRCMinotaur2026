@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -37,6 +36,7 @@ import frc.minolib.advantagekit.LocalADStarAK;
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.hardware.MinoCANBus;
 import frc.minolib.io.BatteryIOInputsAutoLogged;
+import frc.minolib.phoenix.PhoenixUtility;
 import frc.minolib.utilities.BatteryLogger;
 import frc.robot.constants.BuildConstants;
 import frc.robot.constants.GlobalConstants;
@@ -161,6 +161,8 @@ public class Robot extends LoggedRobot {
     LoggedTracer.record("Commands");
 
     logReceiverQueueAlert.set(Logger.getReceiverQueueFault());
+
+    PhoenixUtility.refreshAll();
 
     var canStatus = RobotController.getCANStatus();
     Logger.recordOutput("CANStatus/OffCount", canStatus.busOffCount);
