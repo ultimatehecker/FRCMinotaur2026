@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import org.littletonrobotics.junction.LogFileUtil;
-import org.littletonrobotics.junction.LoggedPowerDistribution;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.NT4Publisher;
@@ -24,11 +23,11 @@ import edu.wpi.first.hal.AllianceStationID;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 import edu.wpi.first.wpilibj.simulation.DriverStationSim;
+import edu.wpi.first.wpilibj.simulation.RoboRioSim;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
@@ -40,7 +39,6 @@ import frc.minolib.phoenix.PhoenixUtility;
 import frc.minolib.utilities.BatteryLogger;
 import frc.robot.constants.BuildConstants;
 import frc.robot.constants.GlobalConstants;
-import frc.robot.constants.GlobalConstants.RobotType;
 
 public class Robot extends LoggedRobot {
   private Command autonomousCommand;
@@ -83,10 +81,6 @@ public class Robot extends LoggedRobot {
         Logger.addDataReceiver(new WPILOGWriter());
         Logger.addDataReceiver(new NT4Publisher());
 
-        if(GlobalConstants.getRobot() == RobotType.COMPBOT) {
-          LoggedPowerDistribution.getInstance(0, ModuleType.kCTRE);
-        }
-
         break;
       case SIM:
         Logger.addDataReceiver(new NT4Publisher());
@@ -99,10 +93,11 @@ public class Robot extends LoggedRobot {
         break;
     }
 
-    SignalLogger.setPath("/media/sda1/");
-
+    SignalLogger.enableAutoLogging(false);
     LiveWindow.disableAllTelemetry();
     Logger.start();
+
+    DriverStation.silenceJoystickConnectionWarning(true);
 
     Pathfinding.setPathfinder(new LocalADStarAK());
 
@@ -120,6 +115,7 @@ public class Robot extends LoggedRobot {
     CommandScheduler.getInstance().onCommandFinish((Command command) -> logCommandFunction.accept(command, false));
     CommandScheduler.getInstance().onCommandInterrupt((Command command) -> logCommandFunction.accept(command, false));
 
+    RoboRioSim.setTeamNumber(1369);
     if (GlobalConstants.getMode() == GlobalConstants.Mode.SIM) {
       DriverStationSim.setAllianceStationId(AllianceStationID.Blue1);
       DriverStationSim.notifyNewData();
@@ -132,7 +128,7 @@ public class Robot extends LoggedRobot {
     disabledTimer.restart();
 
     // Configure brownout voltage
-    RobotController.setBrownoutVoltage(6.2);
+    RobotController.setBrownoutVoltage(6.0);
     robotContainer = new RobotContainer();
 
     canivoreBus = GlobalConstants.kCANivoreBus;
@@ -144,6 +140,9 @@ public class Robot extends LoggedRobot {
   @Override
   public void robotPeriodic() {
     LoggedTracer.reset();
+
+    PhoenixUtility.refreshAll();
+    LoggedTracer.record("PhoenixRefresh");
 
     batteryInputs.batteryVoltage = RobotController.getBatteryVoltage();
     batteryInputs.rioCurrent = RobotController.getInputCurrent();
@@ -161,8 +160,6 @@ public class Robot extends LoggedRobot {
     LoggedTracer.record("Commands");
 
     logReceiverQueueAlert.set(Logger.getReceiverQueueFault());
-
-    PhoenixUtility.refreshAll();
 
     var canStatus = RobotController.getCANStatus();
     Logger.recordOutput("CANStatus/OffCount", canStatus.busOffCount);
@@ -219,10 +216,12 @@ public class Robot extends LoggedRobot {
 
   @Override
   public void disabledPeriodic() {
-    if (robotContainer.getAutonomousCommand().getName().equals("Do Nothing")) {
+    if (robotContainer.getAutonomousCommand() != null) {
+      if(robotContainer.getAutonomousCommand().getName() != "Do Nothing") {
+        noAutoSelectedAlert.set(false);
+      }
+
       noAutoSelectedAlert.set(true);
-    } else {
-      noAutoSelectedAlert.set(false);
     }
   }
 
