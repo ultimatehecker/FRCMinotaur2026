@@ -16,8 +16,6 @@ import org.ironmaple.simulation.drivesims.SwerveDriveSimulation;
 import org.littletonrobotics.junction.Logger;
 import org.littletonrobotics.junction.networktables.LoggedDashboardChooser;
 
-import com.ctre.phoenix6.controls.SolidColor;
-import com.ctre.phoenix6.signals.RGBWColor;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.events.EventTrigger;
@@ -41,7 +39,6 @@ import frc.minolib.localization.WeightedPoseEstimate;
 import frc.minolib.utilities.AllianceFlipUtility;
 import frc.robot.command_factories.DrivetrainFactory;
 import frc.robot.command_factories.IntakeFactory;
-import frc.robot.command_factories.SuperstructureFactory;
 import frc.robot.constants.ControllerConstants;
 import frc.robot.constants.DrivetrainConstants;
 import frc.robot.constants.FieldConstants;
@@ -61,7 +58,6 @@ import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIOHardware;
 import frc.robot.subsystems.rollers.RollerSystemIOSimulation;
 import frc.robot.subsystems.rollers.RollerSystemIOHardware;
-import frc.robot.subsystems.shooter.ShooterCalculator;
 import frc.robot.subsystems.shooter.flywheel.Flywheel;
 import frc.robot.subsystems.shooter.flywheel.FlywheelIOHardware;
 import frc.robot.subsystems.shooter.flywheel.FlywheelIOSimulation;
@@ -111,7 +107,7 @@ public class RobotContainer {
   // Primary operator panel overrides
   private final Trigger robotRelative = primaryButtonBoard.spstSwitch(11);
   private final Trigger coast = primaryButtonBoard.spstSwitch(10);
-  private final Trigger disableAutoShooter = primaryButtonBoard.spstSwitch(9);
+  private final Trigger disable = primaryButtonBoard.spstSwitch(9);
   private final Trigger wonAutoOverride = primaryButtonBoard.spstSwitch(8);
   private final Trigger lostAutoOverride = primaryButtonBoard.spstSwitch(7);
 
@@ -265,7 +261,7 @@ public class RobotContainer {
     indexer.setBrakeMode(() -> !coastOverride);
     tower.setBrakeMode(() -> !coastOverride);
     flywheel.setBrakeMode(() -> !coastOverride);
-    hood.setBrakeMode(() -> !coastOverride);
+    hood.setOverrides(coast, disable);
     elevator.setBrakeMode(() -> !coastOverride);
 
     HubShiftUtility.setAllianceWinOverride(() -> {
@@ -318,8 +314,8 @@ public class RobotContainer {
               indexer
           ),
           Commands.runEnd(
-            () -> hood.setAngle(flywheel.getPreset().getData().getHoodAngleDegrees()), 
-            () -> hood.setAngle(12.0), 
+            () -> hood.setAngleDegrees(flywheel.getPreset().getData().getHoodAngleDegrees()), 
+            () -> hood.setAngleDegrees(12.0), 
             hood
           )
         ).raceWith(
@@ -351,8 +347,8 @@ public class RobotContainer {
               indexer
           ),
           Commands.runEnd(
-            () -> hood.setAngle(flywheel.getPreset().getData().getHoodAngleDegrees()), 
-            () -> hood.setAngle(12.0), 
+            () -> hood.setAngleDegrees(flywheel.getPreset().getData().getHoodAngleDegrees()), 
+            () -> hood.setAngleDegrees(12.0), 
             hood
           )
         ).raceWith(
@@ -431,8 +427,8 @@ public class RobotContainer {
             flywheel
           ),
           Commands.runEnd(
-            () -> hood.setAngle(flywheel.getPreset().getData().getHoodAngleDegrees()), //TODO: Change this later before the practice field, 
-            () -> hood.setAngle(12), 
+            () -> hood.setAngleDegrees(flywheel.getPreset().getData().getHoodAngleDegrees()), //TODO: Change this later before the practice field, 
+            () -> hood.setAngleDegrees(12), 
             hood
           )
         ).finallyDo(() -> tower.setTowerGoal(TowerGoal.STOP)).alongWith(Commands.runOnce(() -> indexer.setGoal(IndexerGoal.STOP)))
