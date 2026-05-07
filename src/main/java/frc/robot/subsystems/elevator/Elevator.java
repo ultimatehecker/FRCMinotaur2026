@@ -3,26 +3,23 @@ package frc.robot.subsystems.elevator;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.util.function.BooleanSupplier;
-import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.filter.Debouncer.DebounceType;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
-import frc.minolib.utilities.SubsystemDataProcessor;
 import frc.robot.Robot;
 import frc.robot.constants.ElevatorConstants;
 import frc.robot.constants.GlobalConstants;
-import frc.robot.subsystems.shooter.hood.Hood.HoodState;
+
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 public class Elevator extends SubsystemBase {
@@ -95,20 +92,12 @@ public class Elevator extends SubsystemBase {
 
     public Elevator(ElevatorIO io) {
         this.io = io;
-
-        SubsystemDataProcessor.createAndStartSubsystemDataProcessor(() -> {
-            synchronized (inputs) {
-                io.updateInputs(inputs);
-            }
-        },
-        io);
     }
 
     @Override
     public void periodic() {
-        synchronized (inputs) {
-            Logger.processInputs("Elevator", inputs);
-        }
+        io.updateInputs(inputs);
+        Logger.processInputs("Elevator", inputs);
 
         motorDisconnectedAlert.set(!motorConnectedDebouncer.calculate(inputs.isMotorConnected) && !Robot.isJITing());
         motorTemperatureAlert.set(inputs.temperatureFault);

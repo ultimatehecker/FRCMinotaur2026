@@ -13,7 +13,6 @@ import java.util.concurrent.Executors;
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.MotionMagicExpoTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
@@ -25,8 +24,9 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+
+import frc.minolib.phoenix.PhoenixUtility;
 import frc.robot.constants.ElevatorConstants;
-import frc.robot.constants.GlobalConstants;
 
 public class ElevatorIOHardware implements ElevatorIO {
     private final TalonFX motor;
@@ -73,6 +73,17 @@ public class ElevatorIOHardware implements ElevatorIO {
         );
 
         simpleTryUntilOk(5, () -> motor.optimizeBusUtilization(0, 1.0));
+
+        PhoenixUtility.registerSignals(
+            false, 
+            position, 
+            velocity,
+            appliedVoltage,
+            torqueCurrent,
+            supplyCurrent,
+            temperature,
+            temperatureFault
+        );
     }
 
     @Override
@@ -125,19 +136,5 @@ public class ElevatorIOHardware implements ElevatorIO {
         brakeModeExecutor.execute(() -> {
             motor.setNeutralMode(enabled ? NeutralModeValue.Brake : NeutralModeValue.Coast);
         });
-    }
-
-    @Override
-    public void refreshData() {
-        BaseStatusSignal.refreshAll(
-            position, 
-            velocity,
-            appliedVoltage,
-            torqueCurrent,
-            supplyCurrent,
-            temperature,
-            temperatureFault
-            //absoluteEncoderPosition
-        );
     }
 }
