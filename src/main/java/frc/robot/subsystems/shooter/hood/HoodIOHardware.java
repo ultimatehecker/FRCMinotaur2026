@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.Celsius;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.minolib.phoenix.PhoenixUtility.simpleTryUntilOk;
 
@@ -13,14 +15,16 @@ import java.util.concurrent.Executors;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.AudioConfigs;
+import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -56,7 +60,7 @@ public class HoodIOHardware implements HoodIO {
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
 
     public HoodIOHardware() {
-        motor = new TalonFX(25, GlobalConstants.kRioBus.getParent());
+        motor = new TalonFX(HoodConstants.kMotor.getDeviceID(), HoodConstants.kMotor.getCANBus());
 
         motorConfiguration = new TalonFXConfiguration()
             .withMotorOutput(
@@ -69,6 +73,8 @@ public class HoodIOHardware implements HoodIO {
                     .withPeakReverseTorqueCurrent(-120.0)
             ).withCurrentLimits(
                 new CurrentLimitsConfigs()
+                    .withStatorCurrentLimitEnable(true)
+                    .withStatorCurrentLimit(HoodConstants.kMotorStatorLimit)
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(HoodConstants.kMotorSupplyLimit)
             ).withSlot0(
@@ -79,9 +85,23 @@ public class HoodIOHardware implements HoodIO {
                     .withKS(HoodConstants.kS)
                     .withKV(HoodConstants.kV)
                     .withKA(HoodConstants.kA)
+            ).withClosedLoopRamps(
+                new ClosedLoopRampsConfigs()
+                    .withTorqueClosedLoopRampPeriod(0.02)
+                    .withVoltageClosedLoopRampPeriod(0.02)
+                    .withDutyCycleClosedLoopRampPeriod(0.02)
+            ).withMotionMagic(
+                new MotionMagicConfigs()
+                    .withMotionMagicCruiseVelocity(HoodConstants.kMaximumRotationalVelocity.in(RotationsPerSecond))
+                    .withMotionMagicAcceleration(HoodConstants.kMaximumRotationalAcceleration.in(RotationsPerSecondPerSecond))
+                    .withMotionMagicJerk(HoodConstants.kMaximumRotationalJerk)
             ).withFeedback(
                 new FeedbackConfigs()
                     .withSensorToMechanismRatio(HoodConstants.kMotorReduction)
+            ).withAudio(
+                new AudioConfigs()
+                    .withBeepOnBoot(false)   
+                    .withBeepOnConfig(false)
             );
 
         simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.25));
@@ -116,6 +136,7 @@ public class HoodIOHardware implements HoodIO {
             velocity,
             appliedVoltage,
             supplyCurrent,
+            torqueCurrent,
             temperature,
             temperatureFault
         );
@@ -154,7 +175,7 @@ public class HoodIOHardware implements HoodIO {
             motionMagicTorqueCurrentRequest
                 .withPosition(Units.radiansToRotations(positionRadians))
                 .withOverrideCoastDurNeutral(false)
-                .withFeedForward(0.0)
+                .withSlot(0)
         );
     }
 

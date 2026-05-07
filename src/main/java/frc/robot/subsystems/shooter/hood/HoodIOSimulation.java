@@ -11,6 +11,7 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.simulation.SingleJointedArmSim;
@@ -27,8 +28,13 @@ public class HoodIOSimulation implements HoodIO {
     private double hoodAppliedVoltage = 0.0;
 
     private final PIDController hoodPositionController = new PIDController(0.0, 0.0, 0.0);
+    private SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(0.0, 0.0, 0.0);
+
     private boolean hoodClosedLoop = false;
     private boolean hoodControllerNeedsReset = false;
+
+    private double previousPosition = 0.0;
+    private double previousVelocity = 0.0;
 
     private final LoggedMechanism2d mechanism = new LoggedMechanism2d(
         HoodConstants.kHoodLength.in(Meters) * 3,
@@ -113,16 +119,30 @@ public class HoodIOSimulation implements HoodIO {
             hoodControllerNeedsReset = false;
         }
 
-        setVoltage(hoodPositionController.calculate(hoodSimulation.getAngleRads(), position));
+        double dt = GlobalConstants.kLoopPeriodSeconds;
+
+        double currentVelocity = (position - previousPosition) / dt;
+        double acceleration = (currentVelocity - previousVelocity) / dt;
+
+        previousPosition = position;
+        previousVelocity = currentVelocity;
+
+        double ffVoltage = feedforward.calculateWithVelocities(previousVelocity, currentVelocity);
+        setVoltage(hoodPositionController.calculate(hoodSimulation.getAngleRads(), position) + ffVoltage);
     }
 
     @Override
     public void resetPosition() {
+        hoodSimulation.setState(HoodConstants.kHoodMinimumPosition.in(Radians), 0.0);
+        previousPosition = HoodConstants.kHoodMinimumPosition.in(Radians);
+        previousVelocity = 0.0;
 
+        hoodControllerNeedsReset = true;
     }
 
     @Override
     public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
         hoodPositionController.setPID(kP, kI, kD);
+        feedforward = new SimpleMotorFeedforward(kS, kV, kA, GlobalConstants.kLoopPeriodSeconds);
     }
 }

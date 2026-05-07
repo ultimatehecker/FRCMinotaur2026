@@ -41,7 +41,7 @@ public class Hood extends SubsystemBase {
     
     private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Hood/Homing/Voltage", -2);
     private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Hood/Homing/VelocityThreshold", 0.05);
-    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Hood/HomingTimeoutSeconds", 0.4);
+    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Hood/Homing/TimeoutSeconds", 0.4);
 
     private static final LoggedTunableNumber toleranceDegrees = new LoggedTunableNumber("Hood/ToleranceDegrees", 1.0);
     private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Hood/ReadyDebounceSeconds", 0.08);
@@ -51,13 +51,13 @@ public class Hood extends SubsystemBase {
             default -> {
                 kP.initDefault(HoodConstants.kP);
                 kD.initDefault(HoodConstants.kD);
-                kS.initDefault(HoodConstants.kD);
+                kS.initDefault(HoodConstants.kS);
                 kV.initDefault(HoodConstants.kV);
                 kA.initDefault(HoodConstants.kA);
             }
 
             case SIMBOT -> {
-                kP.initDefault(0.0);
+                kP.initDefault(5.0);
                 kD.initDefault(0.0);
                 kS.initDefault(0.0);
                 kV.initDefault(0.0);
@@ -134,7 +134,6 @@ public class Hood extends SubsystemBase {
 
         Logger.recordOutput("Hood/Zeroed", zeroed);
         Logger.recordOutput("Hood/TargetAngleDegrees", Units.radiansToDegrees(targetAngleRadians));
-        Logger.recordOutput("Hood/MeasuredAngleDegrees", Units.radiansToDegrees(inputs.positionRadians));
         Logger.recordOutput("Hood/AtTarget", atTarget());
         Logger.recordOutput("Hood/IsReady", isReady());
         Logger.recordOutput("Hood/CoastOverride", coastOverride.getAsBoolean());
@@ -146,8 +145,8 @@ public class Hood extends SubsystemBase {
     }
 
     @AutoLogOutput(key = "Hood/MeasuredAngleDegrees")
-    public double getMeasuredAngleRad() {
-        return inputs.positionRadians;
+    public double getMeasuredAngleDegrees() {
+        return Units.radiansToDegrees(inputs.positionRadians);
     }
 
     public void setAngleDegrees(double degrees) {
@@ -165,7 +164,7 @@ public class Hood extends SubsystemBase {
         io.setBrakeMode(brakeModeEnabled);
     }
 
-    private void stow() {
+    public void stow() {
         targetAngleRadians = Units.degreesToRadians(kMinimumAngleDegrees.get());
     }
 
