@@ -5,6 +5,8 @@ import static edu.wpi.first.units.Units.Celsius;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Rotations;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static frc.minolib.phoenix.PhoenixUtility.simpleTryUntilOk;
 
@@ -13,18 +15,24 @@ import java.util.concurrent.Executors;
 
 import com.ctre.phoenix6.BaseStatusSignal;
 import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.configs.AudioConfigs;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.configs.ClosedLoopRampsConfigs;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.configs.FeedbackConfigs;
 import com.ctre.phoenix6.configs.MagnetSensorConfigs;
+import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
+import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.GravityTypeValue;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
@@ -54,14 +62,14 @@ public class SlamIOHardware implements SlamIO {
     private final StatusSignal<Boolean> temperatureFault;
 
     private final TorqueCurrentFOC torqueCurrentRequest = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
-    private final PositionTorqueCurrentFOC positionTorqueCurrentRequest = new PositionTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
+    private final DynamicMotionMagicTorqueCurrentFOC positionTorqueCurrentRequest = new DynamicMotionMagicTorqueCurrentFOC(0.0, 0.0, 0.0).withUpdateFreqHz(0.0);
     private final VoltageOut voltageRequest = new VoltageOut(0.0).withUpdateFreqHz(0.0);
 
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
 
     public SlamIOHardware() {
-        motor = new TalonFX(14, GlobalConstants.kRioBus.getParent());
-        encoder = new CANcoder(16, GlobalConstants.kRioBus.getParent());
+        motor = new TalonFX(IntakeConstants.kPivotMotor.getDeviceID(), IntakeConstants.kPivotMotor.getCANBus());
+        encoder = new CANcoder(IntakeConstants.kPivotAbsoluteEncoder.getDeviceID(), IntakeConstants.kPivotAbsoluteEncoder.getCANBus());
 
         encoderConfiguration = new CANcoderConfiguration()
             .withMagnetSensor(
@@ -87,9 +95,33 @@ public class SlamIOHardware implements SlamIO {
                     .withStatorCurrentLimit(IntakeConstants.kPivotMotorStatorLimit)
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(IntakeConstants.kPivotMotorSupplyLimit)
+            ).withSlot0(
+                new Slot0Configs()
+                    .withKP(IntakeConstants.pivotkP)
+                    .withKI(IntakeConstants.pivotkI)
+                    .withKD(IntakeConstants.pivotkD)
+                    .withKS(IntakeConstants.pivotkS)
+                    .withKV(IntakeConstants.pivotkV)
+                    .withKG(IntakeConstants.pivotkG)
+                    .withKA(IntakeConstants.pivotkA)
+                    .withGravityType(GravityTypeValue.Arm_Cosine)
+            ).withClosedLoopRamps(
+                new ClosedLoopRampsConfigs()
+                    .withTorqueClosedLoopRampPeriod(0.02)
+                    .withVoltageClosedLoopRampPeriod(0.02)
+                    .withDutyCycleClosedLoopRampPeriod(0.02)
+            ).withMotionMagic(
+                new MotionMagicConfigs()
+                    .withMotionMagicCruiseVelocity(IntakeConstants.kPivotMaximumRotationalVelocity.in(RotationsPerSecond))
+                    .withMotionMagicAcceleration(IntakeConstants.kPivotMaximumRotationalAcceleration.in(RotationsPerSecondPerSecond))
+                    .withMotionMagicJerk(IntakeConstants.kPivotMaximumRotationalJerk)
             ).withFeedback(
                 new FeedbackConfigs()
                     .withSensorToMechanismRatio(IntakeConstants.kPivotMotorReduction)
+            ).withAudio(
+                new AudioConfigs()
+                    .withBeepOnBoot(false)   
+                    .withBeepOnConfig(false)
             );
 
         simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.25));
@@ -160,19 +192,29 @@ public class SlamIOHardware implements SlamIO {
     }
 
     @Override
-    public void setPosition(double positionRadians, double feedforward) {
+    public void resetPosition() {
+        motor.setPosition(IntakeConstants.kIntakeMinimumPosition.in(Rotations), 0.0);
+    }
+
+    @Override
+    public void setPosition(double positionRadians) {
         motor.setControl(
             positionTorqueCurrentRequest
                 .withPosition(Units.radiansToRotations(positionRadians))
-                .withFeedForward(feedforward)
+                .withOverrideCoastDurNeutral(false)
+                .withFeedForward(0.0)
         );
     }
 
     @Override
-    public void setPID(double kP, double kI, double kD) {
+    public void setPID(double kP, double kI, double kD, double kS, double kV, double kG, double kA) {
         motorConfiguration.Slot0.kP = kP;
         motorConfiguration.Slot0.kI = kI;
         motorConfiguration.Slot0.kD = kD;
+        motorConfiguration.Slot0.kS = kS;
+        motorConfiguration.Slot0.kV = kV;
+        motorConfiguration.Slot0.kG = kG;
+        motorConfiguration.Slot0.kA = kA;
 
         simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration));
     }

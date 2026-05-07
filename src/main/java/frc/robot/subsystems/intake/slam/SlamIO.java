@@ -23,9 +23,11 @@ public interface SlamIO {
 
     public void stop();
 
-    public void setPosition(double positionRadians, double feedforward);
+    public void resetPosition();
 
-    public default void setPID(double kP, double kI, double kD) {}
+    public void setPosition(double positionRadians);
+
+    public default void setPID(double kP, double kI, double kD, double kS, double kV, double kG, double kA) {}
 
     public default void setBrakeMode(boolean enabled) {}
 }

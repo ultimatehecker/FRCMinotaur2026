@@ -5,10 +5,10 @@ import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -20,26 +20,30 @@ import frc.robot.Robot;
 import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.IntakeConstants;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
-import static edu.wpi.first.units.Units.RadiansPerSecondPerSecond;
+
+import java.util.function.BooleanSupplier;
 
 import lombok.Getter;
-import lombok.experimental.Accessors;
 
 public class Slam {
     private static final LoggedTunableNumber kP = new LoggedTunableNumber("Intake/Slam/kP");
     private static final LoggedTunableNumber kD = new LoggedTunableNumber("Intake/Slam/kD");
     private static final LoggedTunableNumber kS = new LoggedTunableNumber("Intake/Slam/kS");
+    private static final LoggedTunableNumber kV = new LoggedTunableNumber("Intake/Slam/kV");
     private static final LoggedTunableNumber kG = new LoggedTunableNumber("Intake/Slam/kG");
     private static final LoggedTunableNumber kA = new LoggedTunableNumber("Intake/Slam/kA");
 
-    private static final LoggedTunableNumber kPivotMaximumAngle = new LoggedTunableNumber("Intake/Slam/MaximumAngle", IntakeConstants.kIntakeMaximumPosition.in(Radians));
-    private static final LoggedTunableNumber kMaximumVelocityRadiansPerSecond = new LoggedTunableNumber("Intake/Slam/MaxVelocityRadiansPerSecond", IntakeConstants.kPivotMaximumRotationalVelocity.in(RadiansPerSecond));
-    private static final LoggedTunableNumber kMaximumAccelerationRadiansPerSecond2 = new LoggedTunableNumber("Intake/Slam/MaxAccelerationRadiansPerSecond2", IntakeConstants.kPivotMaximumRotationalAcceleration.in(RadiansPerSecondPerSecond));
-    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Intake/Slam/HomingVoltage", -3.0);
-    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Intake/Slam/HomingTimeSeconds", 0.4);
-    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Intake/Slam/HomingVelocityThreshold", 0.1);
+    private static final LoggedTunableNumber kMinimumAngleDegrees = new LoggedTunableNumber("Hood/MinimumAngleDegrees", IntakeConstants.kIntakeMinimumPosition.in(Degrees));
+    private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Hood/MaximumAngleDegrees", IntakeConstants.kIntakeMaximumPosition.in(Degrees));
+
+    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Intake/Slam/Homing/Voltage", -2);
+    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Intake/Slam/Homing/VelocityThreshold", 0.05);
+    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Intake/Slam/Homing/TimeoutSeconds", 0.4);
+
+    private static final LoggedTunableNumber kToleranceDegrees = new LoggedTunableNumber("Intake/Slam/ToleranceDegrees", 1.0);
+    private static final LoggedTunableNumber kReadyDebounceSeconds = new LoggedTunableNumber("Intake/Slam/ReadyDebounceSeconds", 0.08);
 
     static {
         switch (GlobalConstants.getRobot()) {
@@ -47,6 +51,7 @@ public class Slam {
                 kP.initDefault(IntakeConstants.pivotkP);
                 kD.initDefault(IntakeConstants.pivotkD);
                 kS.initDefault(IntakeConstants.pivotkS);
+                kV.initDefault(IntakeConstants.pivotkV);
                 kG.initDefault(IntakeConstants.pivotkG);
                 kA.initDefault(IntakeConstants.pivotkA);
             }
@@ -54,6 +59,7 @@ public class Slam {
                 kP.initDefault(10.0);
                 kD.initDefault(0.0);
                 kS.initDefault(0.0);
+                kV.initDefault(0.0);
                 kG.initDefault(0.0);
                 kA.initDefault(0.0);
             }
@@ -65,48 +71,27 @@ public class Slam {
 
     // Connected debouncer
     private final Debouncer motorConnectedDebouncer = new Debouncer(0.5, Debouncer.DebounceType.kFalling);
+    private Debouncer homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get(), Debouncer.DebounceType.kRising);
+    private Debouncer readyDebouncer = new Debouncer(kReadyDebounceSeconds.get(), Debouncer.DebounceType.kFalling);
 
     private final Alert motorDisconnectedAlert = new Alert("Slam motor disconnected!", Alert.AlertType.kError);
     private final Alert motorTemperatureAlert = new Alert("Slam motor is overheating!", Alert.AlertType.kWarning);
 
-    @AutoLogOutput(key = "Intake/Slam/BrakeModeEnabled")
-    private boolean brakeModeEnabled = true;
+    @AutoLogOutput(key = "Intake/Slam/CoastOverride") private BooleanSupplier coastOverride = () -> false;
+    @AutoLogOutput(key = "Intake/Slam/DisabledOverride") private BooleanSupplier disabledOverride = () -> false;
 
-    private TrapezoidProfile profile;
-    @Getter private State setpoint = new State();
+    @AutoLogOutput(key = "Intake/Slam/BrakeModeEnabled") 
+    private boolean brakeModeEnabled = false;
 
-    @Getter 
-    @AutoLogOutput(key = "Intake/Slam/RequestedPosition") 
-    private double requestedPosition = IntakeConstants.kIntakeMinimumPosition.in(Radians);
-    private boolean stopProfile = false;
+    @Getter private boolean zeroed = false;
+    private double targetAngleRadians = IntakeConstants.kIntakeMinimumPosition.in(Radians);
 
-    @AutoLogOutput(key = "Intake/Slam/HomedPositionRadians")
-    private double homedPosition = 0.0;
-
-    @AutoLogOutput(key = "Intake/Slam/Homed")
-    @Getter
-    private boolean homed = true; // TODO: Revert to false when the homing system works
-
-    private Debouncer homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
-    private final Command homingCommand;
-
-    @Getter
-    @Accessors(fluent = true)
-    @AutoLogOutput(key = "Intake/Slam/Profile/AtGoal")
-    private boolean atGoal = false;
-
-    @Getter
-    @Accessors(fluent = true)
-    private boolean wantsToDeploy = false;
+    private final Command zeroCommand;
 
     public Slam(SlamIO io) {
         this.io = io;
 
-        profile = new TrapezoidProfile(
-            new TrapezoidProfile.Constraints(kMaximumVelocityRadiansPerSecond.get(), kMaximumAccelerationRadiansPerSecond2.get())
-        );
-
-        homingCommand = homingSequence();
+        zeroCommand = zeroCommand();
     }
 
     public void periodic() {
@@ -116,120 +101,110 @@ public class Slam {
         motorDisconnectedAlert.set(!motorConnectedDebouncer.calculate(inputs.isMotorConnected) && !Robot.isJITing());
         motorTemperatureAlert.set(inputs.temperatureFault);
 
+        Robot.batteryLogger.reportCurrentUsage("Slam", inputs.isMotorConnected ? inputs.supplyCurrentAmperes : 0.0);
+
         // Update tunable numbers
-        if (kP.hasChanged(hashCode()) || kD.hasChanged(hashCode())) {
-            io.setPID(kP.get(), 0.0, kD.get());
+        if (kP.hasChanged(hashCode()) || kD.hasChanged(hashCode()) || kS.hasChanged(hashCode()) || kV.hasChanged(hashCode()) || kG.hasChanged(hashCode()) || kA.hasChanged(hashCode())) {
+            io.setPID(kP.get(), 0.0, kD.get(), kS.get(), kV.get(), kG.get(), kA.get());
         }
 
-        if (kMaximumVelocityRadiansPerSecond.hasChanged(hashCode()) || kMaximumAccelerationRadiansPerSecond2.hasChanged(hashCode())) {
-            profile = new TrapezoidProfile(
-                new TrapezoidProfile.Constraints(
-                    kMaximumVelocityRadiansPerSecond.get(), 
-                    kMaximumAccelerationRadiansPerSecond2.get()
-                )
-            );
+        if (kReadyDebounceSeconds.hasChanged(hashCode())) {
+            readyDebouncer.setDebounceTime(kReadyDebounceSeconds.get());
         }
 
-        // Tell intake to deploy or not when disabled
-        wantsToDeploy = !homed || (getMeasuredAngleRad() < IntakeConstants.kIntakeMaximumPosition.in(Radians) / 2.0);
-
-        if (DriverStation.isEnabled() && !homed && !homingCommand.isScheduled()) {
-            CommandScheduler.getInstance().schedule(homingCommand);
+        if (kHomingTimeoutSeconds.hasChanged(hashCode())) {
+            homingDebouncer.setDebounceTime(kHomingTimeoutSeconds.get());
         }
 
-        // Run profile
-        final boolean shouldRunProfile = !stopProfile
-            && brakeModeEnabled
-            && (homed || GlobalConstants.getRobot() == GlobalConstants.RobotType.SIMBOT)
-            && DriverStation.isEnabled();
+        if (DriverStation.isEnabled() && !zeroed && !zeroCommand.isScheduled()) {
+            CommandScheduler.getInstance().schedule(zeroCommand);
+        }
 
-        Logger.recordOutput("Intake/Slam/RunningProfile", shouldRunProfile);
+        setBrakeMode(!coastOverride.getAsBoolean()); 
 
-        if (shouldRunProfile) {
-            var goalState = new State(MathUtil.clamp(requestedPosition, 0.0, kPivotMaximumAngle.get()), 0.0);
-            double previousVelocity = setpoint.velocity;
-            setpoint = profile.calculate(GlobalConstants.kLoopPeriodSeconds, setpoint, goalState);
-
-            if (setpoint.position < 0.0 || setpoint.position > kPivotMaximumAngle.get()) {
-                setpoint = new State(MathUtil.clamp(setpoint.position, 0.0, kPivotMaximumAngle.get()), 0.0);
-            }
-
-            atGoal = EqualsUtility.epsilonEquals(setpoint.position, goalState.position) && EqualsUtility.epsilonEquals(setpoint.velocity, goalState.velocity);
-
-            double accel = (setpoint.velocity - previousVelocity) / GlobalConstants.kLoopPeriodSeconds;
-            io.setPosition(
-                setpoint.position,
-                kS.get() * Math.signum(setpoint.velocity) + kG.get() * Math.cos(setpoint.position) + kA.get() * accel
+        if (!Double.isNaN(targetAngleRadians) && zeroed) {
+            double restrictedSetpoint = MathUtil.clamp(
+                targetAngleRadians,
+                Units.degreesToRadians(kMinimumAngleDegrees.get()),
+                Units.degreesToRadians(kMaximumAngleDegrees.get())
             );
 
-            // Log state
-            Logger.recordOutput("Intake/Slam/Profile/SetpointPositionRadians", setpoint.position);
-            Logger.recordOutput("Intake/Slam/Profile/SetpointVelocityRadiansPerSecond", setpoint.velocity);
-            Logger.recordOutput("Intake/Slam/Profile/GoalPositionRadians", goalState.position);
-            Logger.recordOutput("Intake/Slam/Profile/GoalVelocityRadiansPerSecond", goalState.velocity);
-        } else {
-            // Reset setpoint
-            setpoint = new State(getMeasuredAngleRad(), 0.0);
-
-            // Clear logs
-            Logger.recordOutput("Intake/Slam/Profile/SetpointPositionRadians", 0.0);
-            Logger.recordOutput("Intake/Slam/Profile/SetpointVelocityRadiansPerSecond", 0.0);
-            Logger.recordOutput("Intake/Slam/Profile/GoalPositionRadians", 0.0);
-            Logger.recordOutput("Intake/Slam/Profile/GoalVelocityRadiansPerSecond", 0.0);
+            io.setPosition(restrictedSetpoint);
         }
 
-        // Log state
-        Logger.recordOutput("Intake/Slam/MeasuredVelocityRadiansPerSecond", inputs.velocityRadiansPerSecond);
+        Logger.recordOutput("Intake/Slam/Zeroed", zeroed);
+        Logger.recordOutput("Intake/Slam/TargetAngleDegrees", Units.radiansToDegrees(targetAngleRadians));
+        SmartDashboard.putBoolean("Is Slam Retracted?", EqualsUtility.epsilonEquals(inputs.positionRadians, Units.degreesToRadians(kMinimumAngleDegrees.get())));
+        
         LoggedTracer.record("SlamPeriodic");
     }
 
-    public void setSetpointPosition(double position) {
-        if (requestedPosition == position) return;
-        this.requestedPosition = position;
-        atGoal = false;
+    @AutoLogOutput(key = "Intake/Slam/MeasuredAngleDegrees")
+    public double getMeasuredAngleDegrees() {
+        return Units.radiansToDegrees(inputs.positionRadians);
     }
 
-    public void stop() {
-        io.setVoltage(0.0);
+    public void setAngleDegrees(double degrees) {
+        targetAngleRadians = Units.degreesToRadians(degrees);
     }
 
-    public void setBrakeMode(boolean enabled) {
+    public void setOverrides(BooleanSupplier coastOverride, BooleanSupplier disabledOverride) {
+        this.coastOverride = coastOverride;
+        this.disabledOverride = disabledOverride;
+    }
+
+    private void setBrakeMode(boolean enabled) {
         if (brakeModeEnabled == enabled) return;
         brakeModeEnabled = enabled;
         io.setBrakeMode(brakeModeEnabled);
     }
 
-    /** Set current position of slam to home. */
-    public void setHome() {
-        homedPosition = inputs.positionRadians;
-        homed = true;
+    public void stow() {
+        targetAngleRadians = Units.degreesToRadians(kMinimumAngleDegrees.get());
     }
 
-    public Command homingSequence() {
-        return Commands.startRun(() -> {
-            stopProfile = true;
-            homed = false;
-            homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get());
-            homingDebouncer.calculate(false);
-        }, () -> {
-            if (!brakeModeEnabled) return;
-            io.setVoltage(kHomingVoltage.get());
-            homed = homingDebouncer.calculate(Math.abs(inputs.velocityRadiansPerSecond) <= kHomingVelocityThreshold.get() && Math.abs(inputs.appliedVoltage) >= kHomingVoltage.get() * 0.7);
-        })
-        .until(() -> homed)
-        .andThen(this::setHome)
-        .finallyDo(() -> {
-            stopProfile = false;
-        });
+    public void stop() {
+        targetAngleRadians = Double.NaN;
+        readyDebouncer.calculate(false);
+        io.stop();
     }
 
-    public void overrideHoming() {
-        homed = false;
+    @AutoLogOutput(key = "Intake/Slam/AtTarget")
+    public boolean atTarget() {
+        if (Double.isNaN(targetAngleRadians)) return false;
+        return Math.abs(inputs.positionRadians - targetAngleRadians) <= Units.degreesToRadians(kToleranceDegrees.get());
     }
 
-    /** Get position of slam with maxAngle at home */
-    @AutoLogOutput(key = "Intake/Slam/MeasuredAngleRadians")
-    public double getMeasuredAngleRad() {
-        return inputs.positionRadians - homedPosition;
+    @AutoLogOutput(key = "Intake/Slam/IsReady")
+    public boolean isReady() {
+        return zeroed && readyDebouncer.calculate(atTarget());
+    }
+
+    public Command stowCommand() {
+        return Commands.run(this::stow).withName("Stow Slam");
+    }
+
+    public Command zeroCommand() {
+        return Commands.sequence(
+            Commands.runOnce(() -> {
+                zeroed = false;
+                homingDebouncer = new Debouncer(kHomingTimeoutSeconds.get(), Debouncer.DebounceType.kRising);
+                homingDebouncer.calculate(false);
+                targetAngleRadians = Double.NaN;
+            }),
+            Commands.run(() -> {
+                io.setVoltage(kHomingVoltage.get());
+            }).until(() -> {
+                    return homingDebouncer.calculate(Math.abs(inputs.velocityRadiansPerSecond) <= kHomingVelocityThreshold.get() && Math.abs(inputs.appliedVoltage) >= Math.abs(kHomingVoltage.get()) * 0.7);
+            }).withTimeout(3.0),
+            Commands.runOnce(() -> {
+                io.resetPosition();
+
+                zeroed = true;
+                stow();
+            })
+        )
+        .withName("Zero Slam")
+        .ignoringDisable(false);
     }
 }

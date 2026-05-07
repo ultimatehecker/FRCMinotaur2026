@@ -11,6 +11,7 @@ import org.littletonrobotics.junction.mechanism.LoggedMechanismLigament2d;
 import org.littletonrobotics.junction.mechanism.LoggedMechanismRoot2d;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -27,8 +28,13 @@ public class SlamIOSimulation implements SlamIO {
     private double pivotAppliedVoltage = 0.0;
 
     private final PIDController pivotController = new PIDController(0.0, 0.0, 0.0);
+    private ArmFeedforward feedforward = new ArmFeedforward(0.0, 0.0, 0.0, 0.0);
+
     private boolean pivotClosedLoop = false;
     private boolean pivotControllerNeedsReset = false;
+
+    private double previousPosition = 0.0;
+    private double previousVelocity = 0.0;
 
     private final LoggedMechanism2d mechanism = new LoggedMechanism2d(
         IntakeConstants.kIntakeLength.in(Meters) * 3,
@@ -102,7 +108,16 @@ public class SlamIOSimulation implements SlamIO {
     }
 
     @Override
-    public void setPosition(double position, double feedforward) {
+    public void resetPosition() {
+        pivotSimulation.setState(IntakeConstants.kIntakeMinimumPosition.in(Radians), 0.0);
+        previousPosition = IntakeConstants.kIntakeMinimumPosition.in(Radians);
+        previousVelocity = 0.0;
+
+        pivotControllerNeedsReset = true;
+    }
+
+    @Override
+    public void setPosition(double position) {
         if (!pivotClosedLoop) {
             pivotControllerNeedsReset = true;
             pivotClosedLoop = true;
@@ -112,11 +127,21 @@ public class SlamIOSimulation implements SlamIO {
             pivotControllerNeedsReset = false;
         }
 
-        setVoltage(pivotController.calculate(pivotSimulation.getAngleRads(), position) + feedforward);
+        double dt = GlobalConstants.kLoopPeriodSeconds;
+
+        double currentVelocity = (position - previousPosition) / dt;
+        double acceleration = (currentVelocity - previousVelocity) / dt;
+
+        previousPosition = position;
+        previousVelocity = currentVelocity;
+
+        double ffVoltage = feedforward.calculateWithVelocities(position, currentVelocity, previousVelocity);
+        setVoltage(pivotController.calculate(pivotSimulation.getAngleRads(), position) + ffVoltage);
     }
 
     @Override
-    public void setPID(double kP, double kI, double kD) {
+    public void setPID(double kP, double kI, double kD, double kS, double kV, double kG, double kA) {
         pivotController.setPID(kP, kI, kD);
+        feedforward = new ArmFeedforward(kS, kV, kG, kA);
     }
 }
