@@ -173,7 +173,7 @@ public class HoodIOHardware implements HoodIO {
 
     @Override
     public void resetPosition() {
-        motor.setPosition(HoodConstants.kHoodZeoredPosition.in(Rotations), 0.0);
+        motor.setPosition(HoodConstants.kZeoredPosition.in(Rotations), 0.0);
     }
 
     @Override

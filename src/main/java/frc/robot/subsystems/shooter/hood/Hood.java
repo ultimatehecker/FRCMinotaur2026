@@ -1,7 +1,6 @@
 package frc.robot.subsystems.shooter.hood;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
 
 import java.util.function.BooleanSupplier;
 
@@ -36,8 +35,8 @@ public class Hood extends SubsystemBase {
     private static final LoggedTunableNumber kV = new LoggedTunableNumber("Hood/Gains/kV");
     private static final LoggedTunableNumber kA = new LoggedTunableNumber("Hood/Gains/kA");
 
-    private static final LoggedTunableNumber kMinimumAngleDegrees = new LoggedTunableNumber("Hood/MinimumAngleDegrees", HoodConstants.kHoodMinimumPosition.in(Degrees));
-    private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Hood/MaximumAngleDegrees", HoodConstants.kHoodMaximumPosition.in(Degrees));
+    private static final LoggedTunableNumber kMinimumAngleDegrees = new LoggedTunableNumber("Hood/MinimumAngleDegrees", HoodConstants.kMinimumPosition.in(Degrees));
+    private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Hood/MaximumAngleDegrees", HoodConstants.kMaximumPosition.in(Degrees));
     
     private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Hood/Homing/Voltage", -2);
     private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Hood/Homing/VelocityThreshold", 0.06);
@@ -83,7 +82,7 @@ public class Hood extends SubsystemBase {
     private boolean brakeModeEnabled = false;
 
     @Getter private boolean zeroed = false;
-    private double targetAngleRadians = HoodConstants.kHoodMinimumPosition.in(Radians);
+    private double targetAngleRadians = Double.NaN;
 
     private final Command zeroCommand;
 

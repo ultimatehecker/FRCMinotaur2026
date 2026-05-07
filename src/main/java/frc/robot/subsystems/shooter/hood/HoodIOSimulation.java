@@ -37,17 +37,17 @@ public class HoodIOSimulation implements HoodIO {
     private double previousVelocity = 0.0;
 
     private final LoggedMechanism2d mechanism = new LoggedMechanism2d(
-        HoodConstants.kHoodLength.in(Meters) * 3,
-        HoodConstants.kHoodLength.in(Meters) * 3
+        HoodConstants.kLength.in(Meters) * 3,
+        HoodConstants.kLength.in(Meters) * 3
     );
 
-    private final LoggedMechanismRoot2d mechanismRoot = mechanism.getRoot("Pivot Joint", HoodConstants.kHoodLength.in(Meters) * 1.5, HoodConstants.kHoodLength.in(Meters) * 1.5);
+    private final LoggedMechanismRoot2d mechanismRoot = mechanism.getRoot("Pivot Joint", HoodConstants.kLength.in(Meters) * 1.5, HoodConstants.kLength.in(Meters) * 1.5);
 
     private final LoggedMechanismLigament2d pivotLigament = mechanismRoot.append(
         new LoggedMechanismLigament2d(
             "Arm",
-            HoodConstants.kHoodLength.in(Meters),
-            HoodConstants.kHoodMinimumPosition.in(Degrees),
+            HoodConstants.kLength.in(Meters),
+            HoodConstants.kMinimumPosition.in(Degrees),
             4,
             new Color8Bit(Color.kMaroon)
         )
@@ -58,12 +58,12 @@ public class HoodIOSimulation implements HoodIO {
         hoodSimulation = new SingleJointedArmSim(
             hoodGearbox,
             HoodConstants.kMotorReduction,
-            HoodConstants.kHoodMOI.in(KilogramSquareMeters),
-            HoodConstants.kHoodLength.in(Meters),
-            HoodConstants.kHoodZeoredPosition.in(Radians),
-            HoodConstants.kHoodMaximumPosition.in(Radians),
+            HoodConstants.kMOI.in(KilogramSquareMeters),
+            HoodConstants.kLength.in(Meters),
+            HoodConstants.kZeoredPosition.in(Radians),
+            HoodConstants.kMaximumPosition.in(Radians),
             true, 
-            HoodConstants.kHoodMinimumPosition.in(Radians)
+            HoodConstants.kMinimumPosition.in(Radians)
         );
     }
 
@@ -110,8 +110,8 @@ public class HoodIOSimulation implements HoodIO {
 
     @Override
     public void resetPosition() {
-        hoodSimulation.setState(HoodConstants.kHoodMinimumPosition.in(Radians), 0.0);
-        previousPosition = HoodConstants.kHoodMinimumPosition.in(Radians);
+        hoodSimulation.setState(HoodConstants.kMinimumPosition.in(Radians), 0.0);
+        previousPosition = HoodConstants.kMinimumPosition.in(Radians);
         previousVelocity = 0.0;
 
         hoodControllerNeedsReset = true;
@@ -131,7 +131,6 @@ public class HoodIOSimulation implements HoodIO {
         double dt = GlobalConstants.kLoopPeriodSeconds;
 
         double currentVelocity = (position - previousPosition) / dt;
-        double acceleration = (currentVelocity - previousVelocity) / dt;
 
         previousPosition = position;
         previousVelocity = currentVelocity;
