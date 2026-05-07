@@ -1,6 +1,5 @@
 package frc.robot.subsystems.led;
 
-import com.ctre.phoenix.led.Animation;
 import com.ctre.phoenix6.configs.CANdleConfiguration;
 import com.ctre.phoenix6.configs.CANdleFeaturesConfigs;
 import com.ctre.phoenix6.configs.LEDConfigs;
@@ -13,13 +12,14 @@ import com.ctre.phoenix6.signals.RGBWColor;
 import com.ctre.phoenix6.signals.StripTypeValue;
 
 import edu.wpi.first.wpilibj.util.Color;
+import frc.robot.constants.GlobalConstants;
 
 public class LedIOHardware implements LedIO {
     private final CANdle candle;
     private final CANdleConfiguration configuration;
 
     public LedIOHardware() {
-        candle = new CANdle(23);
+        candle = new CANdle(28, GlobalConstants.kCANivoreBus.getParent());
         configuration = new CANdleConfiguration()
             .withLED(
                 new LEDConfigs()

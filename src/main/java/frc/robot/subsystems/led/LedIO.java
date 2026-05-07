@@ -1,6 +1,5 @@
 package frc.robot.subsystems.led;
 
-import com.ctre.phoenix.led.Animation;
 import com.ctre.phoenix6.controls.ControlRequest;
 
 import edu.wpi.first.wpilibj.util.Color;

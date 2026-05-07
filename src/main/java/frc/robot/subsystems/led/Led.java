@@ -23,7 +23,7 @@ public class Led extends SubsystemBase {
     public Led(LedIO io, RobotState robotState) {
         this.io = io;
         this.robotState = robotState;
-        
+
         setDefaultCommand(commandIdle());
     }
 
