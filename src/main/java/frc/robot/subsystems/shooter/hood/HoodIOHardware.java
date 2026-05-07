@@ -37,13 +37,14 @@ import edu.wpi.first.units.measure.AngularVelocity;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+
 import frc.minolib.phoenix.PhoenixUtility;
-import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.HoodConstants;
 
 public class HoodIOHardware implements HoodIO {
     private final TalonFX motor;
     private final TalonFXConfiguration motorConfiguration;
+    private final Slot0Configs closedLoopConfiguration;
 
     private final StatusSignal<Angle> position;
     private final StatusSignal<AngularVelocity> velocity;
@@ -62,6 +63,7 @@ public class HoodIOHardware implements HoodIO {
     public HoodIOHardware() {
         motor = new TalonFX(HoodConstants.kMotor.getDeviceID(), HoodConstants.kMotor.getCANBus());
 
+        closedLoopConfiguration = new Slot0Configs();
         motorConfiguration = new TalonFXConfiguration()
             .withMotorOutput(
                 new MotorOutputConfigs()
@@ -78,7 +80,7 @@ public class HoodIOHardware implements HoodIO {
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(HoodConstants.kMotorSupplyLimit)
             ).withSlot0(
-                new Slot0Configs()
+                closedLoopConfiguration
                     .withKP(HoodConstants.kP)
                     .withKI(HoodConstants.kI)
                     .withKD(HoodConstants.kD)
@@ -170,6 +172,11 @@ public class HoodIOHardware implements HoodIO {
     }
 
     @Override
+    public void resetPosition() {
+        motor.setPosition(HoodConstants.kHoodZeoredPosition.in(Rotations), 0.0);
+    }
+
+    @Override
     public void setPosition(double positionRadians) {
         motor.setControl(
             motionMagicTorqueCurrentRequest
@@ -180,20 +187,15 @@ public class HoodIOHardware implements HoodIO {
     }
 
     @Override
-    public void resetPosition() {
-        motor.setPosition(HoodConstants.kHoodZeoredPosition.in(Rotations), 0.0);
-    }
-
-    @Override
     public void setPID(double kP, double kI, double kD, double kS, double kV, double kA) {
-        motorConfiguration.Slot0.kP = kP;
-        motorConfiguration.Slot0.kI = kI;
-        motorConfiguration.Slot0.kD = kD;
-        motorConfiguration.Slot0.kS = kS;
-        motorConfiguration.Slot0.kV = kV;
-        motorConfiguration.Slot0.kA = kA;
+        closedLoopConfiguration.kP = kP;
+        closedLoopConfiguration.kI = kI;
+        closedLoopConfiguration.kD = kD;
+        closedLoopConfiguration.kS = kS;
+        closedLoopConfiguration.kV = kV;
+        closedLoopConfiguration.kA = kA;
 
-        simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration));
+        simpleTryUntilOk(5, () -> motor.getConfigurator().apply(closedLoopConfiguration, 0.0));
     }
 
     @Override

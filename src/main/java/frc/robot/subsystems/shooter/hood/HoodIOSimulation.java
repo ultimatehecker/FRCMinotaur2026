@@ -82,8 +82,8 @@ public class HoodIOSimulation implements HoodIO {
         inputs.temperatureCelsius = 0.0; 
         inputs.temperatureFault = false;
 
-        Logger.recordOutput("Hood/Mechanism2d", mechanism);
         pivotLigament.setAngle(Math.toDegrees(hoodSimulation.getAngleRads()));
+        Logger.recordOutput("Hood/Mechanism2d", mechanism);
 
         hoodSimulation.update(GlobalConstants.kLoopPeriodSeconds);
     }
@@ -109,6 +109,15 @@ public class HoodIOSimulation implements HoodIO {
     }
 
     @Override
+    public void resetPosition() {
+        hoodSimulation.setState(HoodConstants.kHoodMinimumPosition.in(Radians), 0.0);
+        previousPosition = HoodConstants.kHoodMinimumPosition.in(Radians);
+        previousVelocity = 0.0;
+
+        hoodControllerNeedsReset = true;
+    }
+
+    @Override
     public void setPosition(double position) {
         if (!hoodClosedLoop) {
             hoodControllerNeedsReset = true;
@@ -129,15 +138,6 @@ public class HoodIOSimulation implements HoodIO {
 
         double ffVoltage = feedforward.calculateWithVelocities(previousVelocity, currentVelocity);
         setVoltage(hoodPositionController.calculate(hoodSimulation.getAngleRads(), position) + ffVoltage);
-    }
-
-    @Override
-    public void resetPosition() {
-        hoodSimulation.setState(HoodConstants.kHoodMinimumPosition.in(Radians), 0.0);
-        previousPosition = HoodConstants.kHoodMinimumPosition.in(Radians);
-        previousVelocity = 0.0;
-
-        hoodControllerNeedsReset = true;
     }
 
     @Override

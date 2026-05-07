@@ -40,8 +40,8 @@ public class Hood extends SubsystemBase {
     private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Hood/MaximumAngleDegrees", HoodConstants.kHoodMaximumPosition.in(Degrees));
     
     private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Hood/Homing/Voltage", -2);
-    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Hood/Homing/VelocityThreshold", 0.05);
-    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Hood/Homing/TimeoutSeconds", 0.4);
+    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Hood/Homing/VelocityThreshold", 0.06);
+    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Hood/Homing/TimeoutSeconds", 0.2);
 
     private static final LoggedTunableNumber toleranceDegrees = new LoggedTunableNumber("Hood/ToleranceDegrees", 1.0);
     private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Hood/ReadyDebounceSeconds", 0.08);
@@ -76,8 +76,8 @@ public class Hood extends SubsystemBase {
     private final Alert motorDisconnectedAlert = new Alert("The hood motor is disconnected!", AlertType.kError);
     private final Alert motorOverheatingAlert = new Alert("The hood motor is overheating!", AlertType.kWarning);
 
-    private BooleanSupplier coastOverride = () -> false;
-    private BooleanSupplier disabledOverride = () -> false;
+    @AutoLogOutput(key = "Hood/CoastOverride") private BooleanSupplier coastOverride = () -> false;
+    @AutoLogOutput(key = "Hood/DisabledOverride") private BooleanSupplier disabledOverride = () -> false;
 
     @AutoLogOutput(key = "Hood/BrakeModeEnabled") 
     private boolean brakeModeEnabled = false;
@@ -134,11 +134,6 @@ public class Hood extends SubsystemBase {
 
         Logger.recordOutput("Hood/Zeroed", zeroed);
         Logger.recordOutput("Hood/TargetAngleDegrees", Units.radiansToDegrees(targetAngleRadians));
-        Logger.recordOutput("Hood/AtTarget", atTarget());
-        Logger.recordOutput("Hood/IsReady", isReady());
-        Logger.recordOutput("Hood/CoastOverride", coastOverride.getAsBoolean());
-        Logger.recordOutput("Hood/DisabledOverride", disabledOverride.getAsBoolean());
-        
         SmartDashboard.putBoolean("Hood At Minimum Angle", EqualsUtility.epsilonEquals(inputs.positionRadians, Units.degreesToRadians(kMinimumAngleDegrees.get())));
         
         LoggedTracer.record("HoodPeriodic");
