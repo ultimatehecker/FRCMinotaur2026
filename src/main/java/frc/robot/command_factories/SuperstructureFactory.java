@@ -49,7 +49,7 @@ public class SuperstructureFactory {
                     Commands.run(() -> {
                         ShootingParameters params = ShooterCalculator.getInstance().getParameters();
                         if (params.isValid()) {
-                            hood.setAngle(Math.toDegrees(params.hoodAngle()));
+                            hood.setAngleDegrees(Math.toDegrees(params.hoodAngle()));
                         } else {
                             hood.stow();
                         }
@@ -87,7 +87,7 @@ public class SuperstructureFactory {
                     Commands.run(() -> {
                         ShootingParameters params = ShooterCalculator.getInstance().getParameters();
                         if (params.isValid()) {
-                            hood.setAngle(Math.toDegrees(params.hoodAngle()));
+                            hood.setAngleDegrees(Math.toDegrees(params.hoodAngle()));
                         }
                     }, hood),
 

@@ -1,10 +1,6 @@
 package frc.robot.subsystems.shooter;
 
-import static edu.wpi.first.units.Units.Degrees;
-
 import org.littletonrobotics.junction.Logger;
-
-import com.google.flatbuffers.Constants;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.filter.LinearFilter;
@@ -25,10 +21,7 @@ import frc.minolib.utilities.AllianceFlipUtility;
 import frc.robot.RobotState;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.GlobalConstants;
-import frc.robot.constants.HoodConstants;
 import frc.robot.constants.ShooterConstants;
-import frc.robot.subsystems.shooter.flywheel.Flywheel;
-import frc.robot.subsystems.shooter.hood.Hood;
 
 import lombok.Getter;
 
@@ -246,7 +239,7 @@ public class ShooterCalculator {
         previousRobotVelocityOmega = velocity.omegaRadiansPerSecond;
  
         // Launcher position in field coordinates
-        Pose2d launcherPose = estimatedPose.transformBy(ShooterConstants.kRobotToShooterTransform);
+        Pose2d launcherPose = estimatedPose.transformBy(ShooterConstants.kRobotTransform);
  
         // Hub or passing target
         Translation2d target = passing ? getPassingTarget(): AllianceFlipUtility.apply(FieldConstants.Hub.topCenterPoint.toTranslation2d());
@@ -432,10 +425,10 @@ public class ShooterCalculator {
  
         // asin(opposite/hypotenuse) — lateral launcher offset correction
         // Corrects for the launcher not being at the robot centre
-        double lateralOffset = ShooterConstants.kRobotToShooterTransform.getTranslation().getY();
+        double lateralOffset = ShooterConstants.kRobotTransform.getTranslation().getY();
         Rotation2d lateralCorrection = new Rotation2d(Math.asin(MathUtil.clamp(lateralOffset / distanceToVirtualTarget, 1.0, 1.0)));
  
-        return fieldToHubAngle.plus(lateralCorrection).plus(ShooterConstants.kRobotToShooterTransform.getRotation());
+        return fieldToHubAngle.plus(lateralCorrection).plus(ShooterConstants.kRobotTransform.getRotation());
     }
  
     public Translation2d getPassingTarget() {
@@ -497,8 +490,8 @@ public class ShooterCalculator {
         double heading = launcherPose.getRotation().getRadians();
         double cosH = Math.cos(heading);
         double sinH = Math.sin(heading);
-        double offX = ShooterConstants.kRobotToShooterTransform.getTranslation().getX();
-        double offY = ShooterConstants.kRobotToShooterTransform.getTranslation().getY();
+        double offX = ShooterConstants.kRobotTransform.getTranslation().getX();
+        double offY = ShooterConstants.kRobotTransform.getTranslation().getY();
         double fieldOffX =  offX * cosH - offY * sinH;
         double fieldOffY =  offX * sinH + offY * cosH;
         double omega = fieldSpeeds.omegaRadiansPerSecond;

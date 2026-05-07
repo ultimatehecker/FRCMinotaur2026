@@ -76,10 +76,10 @@ public class DriveViz {
 
         /* Telemeterize the pose */
         Pose2d pose = state.Pose;
-        Logger.recordOutput("Drive/Viz/Pose", pose);
+        Logger.recordOutput("Drivetrain/Viz/Pose", pose);
 
         Pose3d pose3d = new Pose3d(pose.getX(), pose.getY(), 0.0, new Rotation3d(0.0, 0.0, pose.getRotation().getRadians()));
-        Logger.recordOutput("Drive/Viz/Pose3d", pose3d);
+        Logger.recordOutput("Drivetrain/Viz/Pose3d", pose3d);
 
         if (DriverStation.isDisabled() || Robot.isSimulation()) {
             field.setRobotPose(pose);

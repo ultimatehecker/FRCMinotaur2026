@@ -22,12 +22,12 @@ public class FlywheelIOSimulation implements FlywheelIO {
     private boolean shooterControllerNeedsReset = false;
 
     public FlywheelIOSimulation() {
-        shooterGearbox = ShooterConstants.kShooterSimulatedGearbox;
+        shooterGearbox = ShooterConstants.kSimulatedGearbox;
         shooterSimulation = new FlywheelSim(
             LinearSystemId.createFlywheelSystem(
                 shooterGearbox,
-                ShooterConstants.kShooterMOI.in(KilogramSquareMeters),
-                ShooterConstants.kShooterMotorReduction
+                ShooterConstants.kMOI.in(KilogramSquareMeters),
+                ShooterConstants.kMotorReduction
             ),
             shooterGearbox
         );

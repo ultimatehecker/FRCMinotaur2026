@@ -244,7 +244,7 @@ public class RobotState {
 
     public double getShooterDistanceToHub() {
         Translation2d hubCenter = AllianceFlipUtility.apply(FieldConstants.Hub.topCenterPoint.toTranslation2d());
-        Pose2d launcherPose = getLatestFieldToRobot().getValue().transformBy(ShooterConstants.kRobotToShooterTransform);
+        Pose2d launcherPose = getLatestFieldToRobot().getValue().transformBy(ShooterConstants.kRobotTransform);
 
         return launcherPose.getTranslation().getDistance(hubCenter);
     }

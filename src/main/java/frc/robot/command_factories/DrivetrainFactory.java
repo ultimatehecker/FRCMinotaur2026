@@ -129,7 +129,7 @@ public class DrivetrainFactory {
             Rotation2d desiredHeading = getShooterAimedHeading(
                 robotPose,
                 targetTranslation.get(),
-                ShooterConstants.kRobotToShooterTransform
+                ShooterConstants.kRobotTransform
             );
 
             drivetrain.setControl(facingAngleRequest
@@ -165,7 +165,7 @@ public class DrivetrainFactory {
         Rotation2d desiredHeading = getShooterAimedHeading(
             robotPose,
             target,
-            ShooterConstants.kRobotToShooterTransform
+            ShooterConstants.kRobotTransform
         );
 
         return Math.abs(robotPose.getRotation().minus(desiredHeading).getDegrees()) <= Degrees.of(2.0).baseUnitMagnitude();

@@ -85,14 +85,14 @@ public class FlywheelIOHardware implements FlywheelIO {
         configuration = new TalonFXConfiguration()
             .withMotorOutput(
                 new MotorOutputConfigs()
-                    .withInverted(ShooterConstants.kPrimaryShooterMotorInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive)
+                    .withInverted(ShooterConstants.kPrimaryMotorInverted ? InvertedValue.Clockwise_Positive : InvertedValue.CounterClockwise_Positive)
                     .withNeutralMode(NeutralModeValue.Coast)
             ).withCurrentLimits(
                 new CurrentLimitsConfigs()
                     .withStatorCurrentLimitEnable(true)
-                    .withStatorCurrentLimit(ShooterConstants.kShooterMotorStatorLimit)
+                    .withStatorCurrentLimit(ShooterConstants.kMotorStatorLimit)
                     .withSupplyCurrentLimitEnable(true)
-                    .withSupplyCurrentLimit(ShooterConstants.kShooterMotorSupplyLimit)
+                    .withSupplyCurrentLimit(ShooterConstants.kMotorSupplyLimit)
             ).withSlot0(
                 new Slot0Configs()
                     .withKP(ShooterConstants.kP)
@@ -103,7 +103,7 @@ public class FlywheelIOHardware implements FlywheelIO {
             )
             .withFeedback(
                 new FeedbackConfigs()
-                    .withSensorToMechanismRatio(ShooterConstants.kShooterMotorReduction)
+                    .withSensorToMechanismRatio(ShooterConstants.kMotorReduction)
             );
 
         simpleTryUntilOk(5, () -> firstShooterMotor.getConfigurator().apply(configuration, 1.0));
