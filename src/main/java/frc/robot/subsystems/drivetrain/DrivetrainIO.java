@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 
 import frc.minolib.localization.WeightedPoseEstimate;
-import frc.minolib.utilities.SubsystemDataProcessor;
 
 public interface DrivetrainIO {
     @AutoLog

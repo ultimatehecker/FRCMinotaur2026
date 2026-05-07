@@ -1,7 +1,6 @@
 package frc.robot.subsystems.drivetrain;
 
 import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.Kilogram;
 import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.function.Consumer;
@@ -12,13 +11,12 @@ import org.littletonrobotics.junction.Logger;
 import com.ctre.phoenix6.Utils;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
-import com.google.flatbuffers.Constants;
 
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.Timer;
+
 import frc.minolib.swerve.MapleSimulatedSwerveDrivetrain;
 import frc.robot.RobotState;
 import frc.robot.constants.DrivetrainConstants;
