@@ -130,7 +130,6 @@ public class SlamIOSimulation implements SlamIO {
         double dt = GlobalConstants.kLoopPeriodSeconds;
 
         double currentVelocity = (position - previousPosition) / dt;
-        double acceleration = (currentVelocity - previousVelocity) / dt;
 
         previousPosition = position;
         previousVelocity = currentVelocity;

@@ -1,22 +1,13 @@
 package frc.robot.subsystems.intake;
 
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
-
 import java.util.function.BooleanSupplier;
 
 import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.filter.Debouncer.DebounceType;
-import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
-import frc.robot.Robot;
-import frc.robot.constants.IntakeConstants;
 import frc.robot.subsystems.intake.slam.Slam;
 import frc.robot.subsystems.intake.slam.SlamIO;
 import frc.robot.subsystems.rollers.RollerSystem;
@@ -83,20 +74,20 @@ public class Intake extends SubsystemBase {
         return switch (goal) {
             case IDLE -> IntakeState.IDLE;
             case STOW -> {
-                slam.setSetpointPosition(Units.degreesToRadians(kStowedPosition.get()));
-                yield slam.atGoal() ? IntakeState.STOWED : IntakeState.STOWING;
+                slam.setAngleDegrees(kStowedPosition.get());
+                yield slam.atTarget() ? IntakeState.STOWED : IntakeState.STOWING;
             }
             case DEPLOY -> {
-                slam.setSetpointPosition(Units.degreesToRadians(kDeployedPosition.get()));
-                yield slam.atGoal() ? IntakeState.DEPLOYED : IntakeState.DEPLOYING;
+                slam.setAngleDegrees(kDeployedPosition.get());
+                yield slam.atTarget() ? IntakeState.DEPLOYED : IntakeState.DEPLOYING;
             }
             case DEPLOY_HALF -> {
-                slam.setSetpointPosition(Units.degreesToRadians(kHalfDeployPosition.get()));
-                yield slam.atGoal() ? IntakeState.DEPLOYED_HALF : IntakeState.DEPLOYING;
+                slam.setAngleDegrees(kHalfDeployPosition.get());
+                yield slam.atTarget() ? IntakeState.DEPLOYED_HALF : IntakeState.DEPLOYING;
             }
             case FEED -> {
-                slam.setSetpointPosition(Units.degreesToRadians(kFeedPosition.get()));
-                yield slam.atGoal() ? IntakeState.FEED : IntakeState.DEPLOYING;
+                slam.setAngleDegrees(kFeedPosition.get());
+                yield slam.atTarget() ? IntakeState.FEED : IntakeState.DEPLOYING;
             }
             case INTAKE -> IntakeState.INTAKING;
             case EXHAUST -> IntakeState.EXHAUSTING;
@@ -110,7 +101,7 @@ public class Intake extends SubsystemBase {
             }
 
             case STOWING -> {
-                slam.setSetpointPosition(Units.degreesToRadians(kStowedPosition.get()));
+                slam.setAngleDegrees(kStowedPosition.get());
                 roller.stop();
             }
 
@@ -120,7 +111,7 @@ public class Intake extends SubsystemBase {
 
             case DEPLOYING -> {
                 double target = goal == IntakeGoal.DEPLOY_HALF ? kHalfDeployPosition.get() : kDeployedPosition.get();
-                slam.setSetpointPosition(Units.degreesToRadians(target));
+                slam.setAngleDegrees(target);
                 roller.setVoltage(kRollerVoltage.get());
             }
 
@@ -133,12 +124,12 @@ public class Intake extends SubsystemBase {
             }
 
             case INTAKING -> {
-                slam.setSetpointPosition(Units.degreesToRadians(kDeployedPosition.get()));
+                slam.setAngleDegrees(kDeployedPosition.get());
                 roller.setVoltage(kRollerVoltage.get());
             }
 
             case EXHAUSTING -> {
-                slam.setSetpointPosition(Units.degreesToRadians(kDeployedPosition.get()));
+                slam.setAngleDegrees(kDeployedPosition.get());
                 roller.setVoltage(kExhaustVoltage.get());
             }
         }
@@ -149,7 +140,7 @@ public class Intake extends SubsystemBase {
     }
 
     public void setBrakeMode(BooleanSupplier enabled) {
-        slam.setBrakeMode(enabled.getAsBoolean());
+        //slam.setBrakeMode(enabled.getAsBoolean());
         roller.setBrakeMode(enabled.getAsBoolean());
     }
 }
