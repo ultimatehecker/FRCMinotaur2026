@@ -1,7 +1,5 @@
 package frc.robot.subsystems.vision;
 
-import static edu.wpi.first.units.Units.Inches;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -101,7 +99,7 @@ public class Vision extends SubsystemBase {
                     continue;
                 }
 
-                double linearStdDev = VisionConstants.linearStdDevBaseline * (Math.pow(observation.averageTagDistance(), 2.0) / observation.numTags());
+                double linearStdDev = VisionConstants.kLinearStdDevBaseline * (Math.pow(observation.averageTagDistance(), 2.0) / observation.numTags());
                 
                 if (cameraIndex < VisionConstants.cameraStdDevFactors.length) {
                     linearStdDev *= VisionConstants.cameraStdDevFactors[cameraIndex];
@@ -113,7 +111,7 @@ public class Vision extends SubsystemBase {
                     VecBuilder.fill(
                         linearStdDev,   
                         linearStdDev,   
-                        VisionConstants.angularStdDevBaseline  
+                        VisionConstants.kAngularStdDevBaseline  
                     ),
                     observation.numTags()
                 ));
@@ -305,7 +303,7 @@ public class Vision extends SubsystemBase {
                 if (ambiguity < bestAmbiguity) {
                     bestAmbiguity = ambiguity;
 
-                    double linearStdDev = VisionConstants.linearStdDevBaseline * (Math.pow(observation.averageTagDistance(), 2.0) / observation.numTags());
+                    double linearStdDev = VisionConstants.kLinearStdDevBaseline * (Math.pow(observation.averageTagDistance(), 2.0) / observation.numTags());
 
                     if (cameraIndex < VisionConstants.cameraStdDevFactors.length) {
                         linearStdDev *= VisionConstants.cameraStdDevFactors[cameraIndex];
@@ -314,7 +312,7 @@ public class Vision extends SubsystemBase {
                     best = new WeightedPoseEstimate(
                         observation.cameraPose().toPose2d(),
                         observation.timestamp(),
-                        VecBuilder.fill(linearStdDev, linearStdDev, VisionConstants.angularStdDevBaseline),
+                        VecBuilder.fill(linearStdDev, linearStdDev, VisionConstants.kAngularStdDevBaseline),
                         observation.numTags());
                 }
             }
@@ -339,7 +337,7 @@ public class Vision extends SubsystemBase {
         for (var estimate : acceptedEstimates) {
             double tagFactor = Math.min(estimate.getNumTags() / 3.0, 1.0);
             double xStdDev = estimate.getVisionMeasurementStdDevs().get(0, 0);
-            double distanceFactor = MathUtil.clamp(1.0 - (xStdDev / VisionConstants.linearStdDevBaseline) * 0.1, 0.0, 1.0);
+            double distanceFactor = MathUtil.clamp(1.0 - (xStdDev / VisionConstants.kLinearStdDevBaseline) * 0.1, 0.0, 1.0);
             double observationConfidence = 0.6 * tagFactor + 0.4 * distanceFactor;
 
             totalConfidence += observationConfidence * estimate.getNumTags();

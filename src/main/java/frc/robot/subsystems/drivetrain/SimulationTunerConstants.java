@@ -24,21 +24,21 @@ public class SimulationTunerConstants {
     // The steer motor uses any SwerveModule.SteerRequestType control request with the
     // output type specified by SwerveModuleConstants.SteerMotorClosedLoopOutput
     private static final Slot0Configs steerGains = new Slot0Configs()
-        .withKP(DrivetrainConstants.steerSimulatedKp)
-        .withKI(DrivetrainConstants.steerSimulatedKi)
-        .withKD(DrivetrainConstants.steerSimulatedKd)
-        .withKS(DrivetrainConstants.steerSimulatedKs)
-        .withKV(DrivetrainConstants.steerSimulatedKv)
-        .withKA(DrivetrainConstants.steerSimulatedKa)
+        .withKP(80)
+        .withKI(0.0)
+        .withKD(0.5)
+        .withKS(0.0)
+        .withKV(0.0)
+        .withKA(0.0)
         .withStaticFeedforwardSign(StaticFeedforwardSignValue.UseClosedLoopSign);
 
     // When using closed-loop control, the drive motor uses the control output type specified by SwerveModuleConstants.DriveMotorClosedLoopOutput
     private static final Slot0Configs driveGains = new Slot0Configs()
-        .withKP(DrivetrainConstants.driveSimulatedKp)
-        .withKI(DrivetrainConstants.driveSimulatedKi)
-        .withKD(DrivetrainConstants.driveSimulatedKd)
-        .withKS(DrivetrainConstants.driveSimulatedKs)
-        .withKV(DrivetrainConstants.driveSimulatedKv);
+        .withKP(0.3)
+        .withKI(0.0)
+        .withKD(0.0)
+        .withKS(0.0)
+        .withKV(0.0);
 
     // The closed-loop output type to use for the steer motors;
     // This affects the PID/FF gains for the steer motors
@@ -64,7 +64,7 @@ public class SimulationTunerConstants {
     // Some configs will be overwritten; check the `with*InitialConfigs()` API documentation.
     private static final TalonFXConfiguration driveInitialConfigs = new TalonFXConfiguration()
         .withCurrentLimits(new CurrentLimitsConfigs()
-            .withSupplyCurrentLimit(Amps.of(80))
+            .withSupplyCurrentLimit(DrivetrainConstants.kDriveSupplyCurrentLimit)
             .withSupplyCurrentLimitEnable(true)
         )
         .withMotorOutput(new MotorOutputConfigs()
@@ -73,7 +73,9 @@ public class SimulationTunerConstants {
 
     private static final TalonFXConfiguration steerInitialConfigs =new TalonFXConfiguration()
         .withCurrentLimits(new CurrentLimitsConfigs()
-            .withSupplyCurrentLimit(Amps.of(60))
+            .withStatorCurrentLimit(DrivetrainConstants.kSteerStatorCurrentLimit)
+            .withStatorCurrentLimitEnable(true)
+            .withSupplyCurrentLimit(DrivetrainConstants.kSteerSupplyCurrentLimit)
             .withSupplyCurrentLimitEnable(true)
         )
         .withMotorOutput(new MotorOutputConfigs()
@@ -108,8 +110,8 @@ public class SimulationTunerConstants {
 
     private static final SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration> ConstantCreator =
         new SwerveModuleConstantsFactory<TalonFXConfiguration, TalonFXConfiguration, CANcoderConfiguration>()
-            .withDriveMotorGearRatio(DrivetrainConstants.kDriveMotorReduction)
-            .withSteerMotorGearRatio(DrivetrainConstants.kSteerMotorReduction)
+            .withDriveMotorGearRatio(DrivetrainConstants.kDriveReduction)
+            .withSteerMotorGearRatio(DrivetrainConstants.kSteerReduction)
             .withCouplingGearRatio(kCoupleRatio)
             .withWheelRadius(DrivetrainConstants.kWheelRadius)
             .withSteerMotorGains(steerGains)

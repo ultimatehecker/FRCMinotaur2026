@@ -5,7 +5,7 @@ import static edu.wpi.first.units.Units.Inches;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
-import edu.wpi.first.units.measure.Distance;
+
 import frc.minolib.vision.CameraConfiguration;
 import frc.minolib.vision.CameraConfiguration.CameraLocation;
 
@@ -34,16 +34,15 @@ public class VisionConstants {
             .withMountingYaw(Degrees.of(220));
 
     public static double kMaximumTagAmbiguity = 0.1;
-    public static Distance kMaximumZPoseError = Inches.of(0.5);
 
-    public static double linearStdDevBaseline = 0.0254; // Meters
-    public static double angularStdDevBaseline = Double.POSITIVE_INFINITY; // Radians
+    public static double kLinearStdDevBaseline = 0.0254; // Meters
+    public static double kAngularStdDevBaseline = Double.POSITIVE_INFINITY; // Radians
 
     public static double[] cameraStdDevFactors = new double[] {
             1.0, // Camera 0
             1.0 // Camera 1
     };
 
-    public static final double kSimAverageErrorPixels = 0.1;
-    public static final double kSimErrorStdDevPixels = 0.05;
+    public static final double kSimulationAverageErrorPixels = 0.1;
+    public static final double kSimulationErrorStdDevPixels = 0.05;
 }

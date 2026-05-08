@@ -1,11 +1,11 @@
-package frc.robot.constants;
+package frc.minolib.controller;
 
 import static edu.wpi.first.units.Units.Seconds;
 
 import edu.wpi.first.units.measure.Time;
 
 public class ControllerConstants {
-    public static final SimControllerType kSimControllerType = SimControllerType.XBOX;
+    public static final SimControllerType kSimulationControllerType = SimControllerType.XBOX;
     public static final Time kDebounceTimeSeconds = Seconds.of(0.1);
 
     public static final double kControllerDeadband = 0.05;

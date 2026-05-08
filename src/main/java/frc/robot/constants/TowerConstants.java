@@ -3,11 +3,10 @@ package frc.robot.constants;
 import static edu.wpi.first.units.Units.Amps;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 
-import org.opencv.core.Mat;
-
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.MomentOfInertia;
+
 import frc.minolib.hardware.MinoCANDevice;
 
 public class TowerConstants {

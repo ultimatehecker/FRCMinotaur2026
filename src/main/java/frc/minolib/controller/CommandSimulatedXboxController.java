@@ -4,7 +4,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.event.EventLoop;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.constants.ControllerConstants;
 
 public class CommandSimulatedXboxController extends CommandXboxController {
     private final SimulatedXboxController m_hid;
@@ -12,7 +11,7 @@ public class CommandSimulatedXboxController extends CommandXboxController {
 
     public CommandSimulatedXboxController(int port) {
         super(port);
-        switch (ControllerConstants.kSimControllerType) {
+        switch (ControllerConstants.kSimulationControllerType) {
             case XBOX:
                 mapping = ControllerMappings.XBOX_MAPPING;
                 m_hid = new SimulatedXboxController(port, mapping);

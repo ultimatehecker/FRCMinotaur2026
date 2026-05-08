@@ -19,17 +19,11 @@ public class IndexerConstants {
     public static final MinoCANDevice kLeftMotor = new MinoCANDevice(17, GlobalConstants.kRioBus);
     public static final MinoCANDevice kRightMotor = new MinoCANDevice(18, GlobalConstants.kRioBus);
 
-    public static final double leftkP = 0.0;
-    public static final double leftkD = 0.0;
-    public static final double leftkS = 0.0;
-    public static final double leftkV = 0.0;
-    public static final double leftkA = 0.0;
-
-    public static final double rightkP = 0.0;
-    public static final double rightkD = 0.0;
-    public static final double rightkS = 0.0;
-    public static final double rightkV = 0.0;
-    public static final double rightkA = 0.0;
+    public static final double kP = 0.0;
+    public static final double kD = 0.0;
+    public static final double kS = 0.0;
+    public static final double kV = 0.0;
+    public static final double kA = 0.0;
 
     public static final boolean kLeftMotorInverted = true;
     public static final double kLeftMotorReduction = (24.0 / 14.0);

@@ -39,44 +39,34 @@ import frc.robot.subsystems.drivetrain.SimulationTunerConstants;
 public class DrivetrainConstants {
     public static final SwerveModuleType kSwerveModuleType = SwerveModuleType.MK4N_L2;
 
-    public static final LinearVelocity kMaximumLinearVelocity = MetersPerSecond.of(4.4);
-    public static final LinearAcceleration kMaximumLinearAcceleration = MetersPerSecondPerSecond.of(6.0);
+    public static final LinearVelocity kMaximumLinearVelocity = MetersPerSecond.of(5.23);
+    public static final LinearAcceleration kMaximumLinearAcceleration = MetersPerSecondPerSecond.of(8.0);
     public static final AngularVelocity kMaximumRotationalVelocity = RadiansPerSecond.of(3 * Math.PI);
     public static final AngularAcceleration kMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6 * Math.PI);
 
-    public static final double driveKp = 0.1;
-    public static final double driveKi = 0.0;
-    public static final double driveKd = 0.0;
-    public static final double driveKs = 0.0;
-    public static final double driveKv = 0.124;
-    public static final double driveKa = 0.0;
-    public static final double driveSimulatedKp = 10.0;
-    public static final double driveSimulatedKi = 0.0;
-    public static final double driveSimulatedKd = 0.0;
-    public static final double driveSimulatedKs = 1.5;
-    public static final double driveSimulatedKv = 0.0;
+    public static final double drivekP = 0.335;
+    public static final double drivekI = 0.0;
+    public static final double drivekD = 0.0;
+    public static final double drivekS = 0.0;
+    public static final double drivekV = 0.124;
+    public static final double drivekA = 0.0;
 
-    public static final boolean kDriveMotorInverted = false;
-    public static final double kDriveMotorReduction = kSwerveModuleType.getDriveReduction();
-    public static final Current kDriveMotorSupplyCurrentLimit = Amps.of(80);
+    public static final boolean kDriveInverted = false;
+    public static final double kDriveReduction = kSwerveModuleType.getDriveReduction();
+    public static final Current kDriveSupplyCurrentLimit = Amps.of(70);
     public static final DCMotor kDriveSimulatedGearbox = DCMotor.getKrakenX60Foc(1);
 
-    public static final double steerKp = 100.0;
-    public static final double steerKi = 0.0;
-    public static final double steerKd = 0.5;
-    public static final double steerKs = 0.1;
-    public static final double steerKv = 1.79;
-    public static final double steerKa = 0.0;
-    public static final double steerSimulatedKp = 80.0;
-    public static final double steerSimulatedKi = 0.0;
-    public static final double steerSimulatedKd = 0.5;
-    public static final double steerSimulatedKs = 0.1;
-    public static final double steerSimulatedKv = 0.0;
-    public static final double steerSimulatedKa = 0.0;
+    public static final double steerkP = 600.0;
+    public static final double steerkI = 0.0;
+    public static final double steerkD = 50.0;
+    public static final double steerkS = 0.1;
+    public static final double steerkV = 1.79;
+    public static final double steerkA = 0.0;
 
-    public static final boolean kSteerMotorInverted = true;
-    public static final double kSteerMotorReduction = kSwerveModuleType.getSteerReduction();
-    public static final Current kSteerMotorStatorCurrentLimit = Amps.of(60);
+    public static final boolean kSteerInverted = true;
+    public static final double kSteerReduction = kSwerveModuleType.getSteerReduction();
+    public static final Current kSteerStatorCurrentLimit = Amps.of(60);
+    public static final Current kSteerSupplyCurrentLimit = Amps.of(40);
     public static final DCMotor kSteerSimulatedGearbox = DCMotor.getKrakenX44Foc(1);
 
     public static final Distance kWheelRadius = Inches.of(1.897);
@@ -117,7 +107,7 @@ public class DrivetrainConstants {
         kMaximumLinearVelocity.in(MetersPerSecond), 
         kWheelCOF.in(Value), 
         kDriveSimulatedGearbox, 
-        kDriveMotorSupplyCurrentLimit.in(Amps), 
+        kDriveSupplyCurrentLimit.in(Amps), 
         1
     );
 
@@ -136,8 +126,8 @@ public class DrivetrainConstants {
             new SwerveModuleSimulationConfig(
                 kDriveSimulatedGearbox,
                 kSteerSimulatedGearbox,
-                kDriveMotorReduction,
-                kSteerMotorReduction,
+                kDriveReduction,
+                kSteerReduction,
                 Volts.of(0.1),
                 Volts.of(0.1),
                 kWheelRadius,
