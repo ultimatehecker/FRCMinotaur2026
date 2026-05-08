@@ -17,7 +17,6 @@ public interface RollerSystemIO {
 
     public void updateInputs(RollerSystemIOInputs inputs);
 
-    /* Run rollers at volts */
     public void setVoltage(double voltage);
 
     public void setOL(double amperes);

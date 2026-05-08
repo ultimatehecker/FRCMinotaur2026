@@ -8,7 +8,6 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -29,7 +28,6 @@ public class Elevator extends SubsystemBase {
     public static final LoggedTunableNumber kG = new LoggedTunableNumber("Elevator/kV");
     public static final LoggedTunableNumber kA = new LoggedTunableNumber("Elevator/kA");
 
-    private static final LoggedTunableNumber toleranceDegrees = new LoggedTunableNumber("Elevator/ToleranceRadians", 0.0524);
     private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Elevator/ReadyDebounceSeconds", 0.08);
 
     private static final LoggedTunableNumber kStowedPosition = new LoggedTunableNumber("Elevator/StowedPosition", 0.0);
@@ -124,7 +122,7 @@ public class Elevator extends SubsystemBase {
             case STOW -> { 
                 io.setPosition(
                     kStowedPosition.get(), 
-                    kS.get() * Math.signum(ElevatorConstants.kMaximumRotationalVelocity.in(RadiansPerSecond)) + kG.get()
+                    kS.get() * Math.signum(ElevatorConstants.kMaximumLinearVelocity.in(RadiansPerSecond)) + kG.get()
                 );
 
                 yield atSetpoint() ? ElevatorState.STOWED : ElevatorState.STOWING;
@@ -132,7 +130,7 @@ public class Elevator extends SubsystemBase {
             case DEPLOY -> {
                 io.setPosition(
                     kDeployedPosition.get(), 
-                    kS.get() * Math.signum(ElevatorConstants.kMaximumRotationalVelocity.in(RadiansPerSecond)) + kG.get()
+                    kS.get() * Math.signum(ElevatorConstants.kMaximumLinearVelocity.in(RadiansPerSecond)) + kG.get()
                 );
 
                 yield atSetpoint() ? ElevatorState.DEPLOYED : ElevatorState.DEPLOYING;
@@ -140,7 +138,7 @@ public class Elevator extends SubsystemBase {
             case CLIMB -> {
                 io.setPosition(
                     kClimbedPosition.get(), 
-                    kS.get() * Math.signum(ElevatorConstants.kMaximumRotationalVelocity.in(RadiansPerSecond)) + kG.get()
+                    kS.get() * Math.signum(ElevatorConstants.kMaximumLinearVelocity.in(RadiansPerSecond)) + kG.get()
                 );
 
                 yield atSetpoint() ? ElevatorState.CLIMBED : ElevatorState.CLIMBING;
@@ -156,21 +154,21 @@ public class Elevator extends SubsystemBase {
             case STOWING -> { 
                 io.setPosition(
                     kStowedPosition.get(), 
-                    kS.get() * Math.signum(ElevatorConstants.kMaximumRotationalVelocity.in(RadiansPerSecond)) + kG.get()
+                    kS.get() * Math.signum(ElevatorConstants.kMaximumLinearVelocity.in(RadiansPerSecond)) + kG.get()
                 );
             }
             case STOWED -> io.stop();
             case DEPLOYING -> {
                 io.setPosition(
                     kDeployedPosition.get(), 
-                    kS.get() * Math.signum(ElevatorConstants.kMaximumRotationalVelocity.in(RadiansPerSecond)) + kG.get()
+                    kS.get() * Math.signum(ElevatorConstants.kMaximumLinearVelocity.in(RadiansPerSecond)) + kG.get()
                 );
             }
             case DEPLOYED -> io.stop();
             case CLIMBING -> {
                 io.setPosition(
                     kClimbedPosition.get(), 
-                    kS.get() * Math.signum(ElevatorConstants.kMaximumRotationalVelocity.in(RadiansPerSecond)) + kG.get()
+                    kS.get() * Math.signum(ElevatorConstants.kMaximumLinearVelocity.in(RadiansPerSecond)) + kG.get()
                 );
             }
             case CLIMBED -> io.stop();
@@ -188,10 +186,6 @@ public class Elevator extends SubsystemBase {
     public void runVoltage(double voltageSetpoint) {
         goal = ElevatorGoal.MANUAL;
         this.voltageSetpoint = voltageSetpoint;
-    }
-
-    private boolean atTarget(double targetDegrees) {
-        return Math.abs(inputs.positionRadians - Units.degreesToRadians(targetDegrees)) <= Units.degreesToRadians(toleranceDegrees.get());
     }
 
     public boolean atSetpoint() {

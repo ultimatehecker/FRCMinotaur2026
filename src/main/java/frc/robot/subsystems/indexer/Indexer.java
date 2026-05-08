@@ -4,20 +4,14 @@ import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.AutoLogOutput;
-import org.littletonrobotics.junction.Logger;
 
-import edu.wpi.first.math.filter.Debouncer;
-import edu.wpi.first.wpilibj.Alert;
-import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-import frc.minolib.advantagekit.LoggedTracer;
 import frc.minolib.advantagekit.LoggedTunableNumber;
-import frc.minolib.utilities.SubsystemDataProcessor;
 import frc.robot.constants.GlobalConstants;
-import frc.robot.constants.IndexerConstants;
 import frc.robot.subsystems.rollers.RollerSystem;
 import frc.robot.subsystems.rollers.RollerSystemIO;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -80,7 +74,7 @@ public class Indexer extends SubsystemBase {
         double rollerVoltage = 0.0;
 
         switch(goal) {
-            case FEED, EXHAUST, IDLE -> {
+            case FEED, EXHAUST, CHURN, IDLE -> {
                 rollerVoltage = goal.getVoltage();
             }
 
