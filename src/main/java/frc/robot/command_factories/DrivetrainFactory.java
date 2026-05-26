@@ -25,9 +25,8 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-
+import frc.minolib.controller.ControllerConstants;
 import frc.robot.RobotState;
-import frc.robot.constants.ControllerConstants;
 import frc.robot.constants.DrivetrainConstants;
 import frc.robot.constants.ShooterConstants;
 import frc.robot.subsystems.drivetrain.Drivetrain;
@@ -186,7 +185,7 @@ public class DrivetrainFactory {
         double velocityY = magnitudeY * DrivetrainConstants.kMaximumLinearVelocity.in(MetersPerSecond);
         double velocityTheta = magnitudeTheta * DrivetrainConstants.kMaximumRotationalVelocity.in(RadiansPerSecond);
 
-        Rotation2d skewCompensationFactor = Rotation2d.fromRadians(robotState.getLatestMeasuredRobotRelativeChassisSpeeds().omegaRadiansPerSecond * -0.03); // TODO: Shew Compenstation to go in DrivetrainConstnats
+        Rotation2d skewCompensationFactor = Rotation2d.fromRadians(robotState.getLatestMeasuredRobotRelativeChassisSpeeds().omegaRadiansPerSecond * -0.03);
 
         return ChassisSpeeds.fromRobotRelativeSpeeds(
             ChassisSpeeds.fromFieldRelativeSpeeds(new ChassisSpeeds(velocityX, velocityY, velocityTheta), robotState.getLatestFieldToRobot().getValue().getRotation()), 
