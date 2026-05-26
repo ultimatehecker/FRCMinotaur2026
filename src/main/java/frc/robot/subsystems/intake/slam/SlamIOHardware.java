@@ -26,7 +26,7 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
-import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.DynamicMotionMagicVoltage;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.CANcoder;
@@ -49,6 +49,7 @@ public class SlamIOHardware implements SlamIO {
     private final CANcoder encoder;
 
     private final TalonFXConfiguration motorConfiguration;
+    private Slot0Configs closedLoopConfiguration;
     private final CANcoderConfiguration encoderConfiguration;
 
     private final StatusSignal<Angle> position;
@@ -59,9 +60,15 @@ public class SlamIOHardware implements SlamIO {
     private final StatusSignal<Temperature> temperature;
     private final StatusSignal<Boolean> temperatureFault;
 
-    private final TorqueCurrentFOC torqueCurrentRequest = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
-    private final DynamicMotionMagicTorqueCurrentFOC positionTorqueCurrentRequest = new DynamicMotionMagicTorqueCurrentFOC(0.0, 0.0, 0.0).withUpdateFreqHz(0.0);
-    private final VoltageOut voltageRequest = new VoltageOut(0.0).withUpdateFreqHz(0.0);
+    private final TorqueCurrentFOC torqueCurrentRequest = new TorqueCurrentFOC(0.0)
+        .withUpdateFreqHz(0.0);
+
+    private final DynamicMotionMagicVoltage positionRequest = new DynamicMotionMagicVoltage(0.0, 0.0, 0.0)
+        .withUpdateFreqHz(0.0)
+        .withEnableFOC(true);
+
+    private final VoltageOut voltageRequest = new VoltageOut(0.0)
+        .withUpdateFreqHz(0.0);
 
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
 
@@ -78,6 +85,7 @@ public class SlamIOHardware implements SlamIO {
 
         simpleTryUntilOk(5, () -> encoder.getConfigurator().apply(encoderConfiguration, 0.25));
 
+        closedLoopConfiguration = new Slot0Configs();
         motorConfiguration = new TalonFXConfiguration()
             .withMotorOutput(
                 new MotorOutputConfigs()
@@ -94,7 +102,7 @@ public class SlamIOHardware implements SlamIO {
                     .withSupplyCurrentLimitEnable(true)
                     .withSupplyCurrentLimit(IntakeConstants.kPivotMotorSupplyLimit)
             ).withSlot0(
-                new Slot0Configs()
+                closedLoopConfiguration
                     .withKP(IntakeConstants.pivotkP)
                     .withKI(IntakeConstants.pivotkI)
                     .withKD(IntakeConstants.pivotkD)
@@ -122,8 +130,8 @@ public class SlamIOHardware implements SlamIO {
                     .withBeepOnConfig(false)
             );
 
-        simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.25));
-        simpleTryUntilOk(5, () -> motor.setPosition(IntakeConstants.kIntakeMinimumPosition.in(Rotations)));
+        simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.0));
+        simpleTryUntilOk(5, () -> motor.setPosition(IntakeConstants.kIntakeMinimumPosition.in(Rotations), 0.0));
 
         position = motor.getPosition();
         velocity = motor.getVelocity();
@@ -133,7 +141,7 @@ public class SlamIOHardware implements SlamIO {
         temperature = motor.getDeviceTemp();
         temperatureFault = motor.getFault_DeviceTemp();
 
-        simpleTryUntilOk(5, () -> torqueCurrent.setUpdateFrequency(100.0)); // TODO: Attempt to run these signals at 250Hz
+        simpleTryUntilOk(5, () -> torqueCurrent.setUpdateFrequency(100.0, 0.0)); // TODO: Attempt to run these signals at 250Hz
         simpleTryUntilOk(
             5, () -> 
             BaseStatusSignal.setUpdateFrequencyForAll(
@@ -197,24 +205,23 @@ public class SlamIOHardware implements SlamIO {
     @Override
     public void setPosition(double positionRadians) {
         motor.setControl(
-            positionTorqueCurrentRequest
+            positionRequest
                 .withPosition(Units.radiansToRotations(positionRadians))
-                .withOverrideCoastDurNeutral(false)
                 .withFeedForward(0.0)
         );
     }
 
     @Override
     public void setPID(double kP, double kI, double kD, double kS, double kV, double kG, double kA) {
-        motorConfiguration.Slot0.kP = kP;
-        motorConfiguration.Slot0.kI = kI;
-        motorConfiguration.Slot0.kD = kD;
-        motorConfiguration.Slot0.kS = kS;
-        motorConfiguration.Slot0.kV = kV;
-        motorConfiguration.Slot0.kG = kG;
-        motorConfiguration.Slot0.kA = kA;
+        closedLoopConfiguration.kP = kP;
+        closedLoopConfiguration.kI = kI;
+        closedLoopConfiguration.kD = kD;
+        closedLoopConfiguration.kS = kS;
+        closedLoopConfiguration.kV = kV;
+        closedLoopConfiguration.kG = kG;
+        closedLoopConfiguration.kA = kA;
 
-        simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration));
+        simpleTryUntilOk(5, () -> motor.getConfigurator().apply(closedLoopConfiguration, 0.0));
     }
 
     @Override

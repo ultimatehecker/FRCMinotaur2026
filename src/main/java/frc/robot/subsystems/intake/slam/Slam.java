@@ -21,26 +21,25 @@ import frc.robot.constants.GlobalConstants;
 import frc.robot.constants.IntakeConstants;
 
 import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.Radians;
 
 import java.util.function.BooleanSupplier;
 
 import lombok.Getter;
 
 public class Slam {
-    private static final LoggedTunableNumber kP = new LoggedTunableNumber("Intake/Slam/kP");
-    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Intake/Slam/kD");
-    private static final LoggedTunableNumber kS = new LoggedTunableNumber("Intake/Slam/kS");
-    private static final LoggedTunableNumber kV = new LoggedTunableNumber("Intake/Slam/kV");
-    private static final LoggedTunableNumber kG = new LoggedTunableNumber("Intake/Slam/kG");
-    private static final LoggedTunableNumber kA = new LoggedTunableNumber("Intake/Slam/kA");
+    private static final LoggedTunableNumber kP = new LoggedTunableNumber("Intake/Slam/Gains/kP");
+    private static final LoggedTunableNumber kD = new LoggedTunableNumber("Intake/Slam/Gains/kD");
+    private static final LoggedTunableNumber kS = new LoggedTunableNumber("Intake/Slam/Gains/kS");
+    private static final LoggedTunableNumber kV = new LoggedTunableNumber("Intake/Slam/Gains/kV");
+    private static final LoggedTunableNumber kG = new LoggedTunableNumber("Intake/Slam/Gains/kG");
+    private static final LoggedTunableNumber kA = new LoggedTunableNumber("Intake/Slam/Gains/kA");
 
-    private static final LoggedTunableNumber kMinimumAngleDegrees = new LoggedTunableNumber("Hood/MinimumAngleDegrees", IntakeConstants.kIntakeMinimumPosition.in(Degrees));
-    private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Hood/MaximumAngleDegrees", IntakeConstants.kIntakeMaximumPosition.in(Degrees));
+    private static final LoggedTunableNumber kMinimumAngleDegrees = new LoggedTunableNumber("Intake/Slam/MinimumAngleDegrees", IntakeConstants.kIntakeMinimumPosition.in(Degrees));
+    private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Intake/Slam/MaximumAngleDegrees", IntakeConstants.kIntakeMaximumPosition.in(Degrees));
 
-    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Intake/Slam/Homing/Voltage", -2);
-    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Intake/Slam/Homing/VelocityThreshold", 0.05);
-    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Intake/Slam/Homing/TimeoutSeconds", 0.4);
+    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Intake/Slam/Homing/Voltage", -3);
+    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Intake/Slam/Homing/VelocityThreshold", 0.06);
+    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Intake/Slam/Homing/TimeoutSeconds", 0.2);
 
     private static final LoggedTunableNumber kToleranceDegrees = new LoggedTunableNumber("Intake/Slam/ToleranceDegrees", 1.0);
     private static final LoggedTunableNumber kReadyDebounceSeconds = new LoggedTunableNumber("Intake/Slam/ReadyDebounceSeconds", 0.08);
@@ -83,8 +82,8 @@ public class Slam {
     @AutoLogOutput(key = "Intake/Slam/BrakeModeEnabled") 
     private boolean brakeModeEnabled = false;
 
-    @Getter private boolean zeroed = false;
-    private double targetAngleRadians = IntakeConstants.kIntakeMinimumPosition.in(Radians);
+    @Getter private boolean zeroed = true;
+    private double targetAngleRadians = Double.NaN;
 
     private final Command zeroCommand;
 
