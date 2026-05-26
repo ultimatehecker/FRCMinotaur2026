@@ -24,7 +24,7 @@ import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs;
-import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC;
+import com.ctre.phoenix6.controls.MotionMagicVoltage;
 import com.ctre.phoenix6.controls.TorqueCurrentFOC;
 import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -55,7 +55,7 @@ public class HoodIOHardware implements HoodIO {
     private final StatusSignal<Boolean> temperatureFault;
 
     private final TorqueCurrentFOC torqueCurrentRequest = new TorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
-    private final MotionMagicTorqueCurrentFOC motionMagicTorqueCurrentRequest = new MotionMagicTorqueCurrentFOC(0.0).withUpdateFreqHz(0.0);
+    private final MotionMagicVoltage motionMagicRequest = new MotionMagicVoltage(0.0).withUpdateFreqHz(0.0).withEnableFOC(true);
     private final VoltageOut voltageRequest = new VoltageOut(0.0).withUpdateFreqHz(0.0);
 
     private static final Executor brakeModeExecutor = Executors.newFixedThreadPool(1);
@@ -106,7 +106,7 @@ public class HoodIOHardware implements HoodIO {
                     .withBeepOnConfig(false)
             );
 
-        simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.25));
+        simpleTryUntilOk(5, () -> motor.getConfigurator().apply(motorConfiguration, 0.0));
 
         position = motor.getPosition();
         velocity = motor.getVelocity();
@@ -116,7 +116,7 @@ public class HoodIOHardware implements HoodIO {
         temperature = motor.getDeviceTemp();
         temperatureFault = motor.getFault_DeviceTemp();
 
-        simpleTryUntilOk(5, () -> torqueCurrent.setUpdateFrequency(100.0)); // TODO: Attempt to run these signals at 250Hz
+        simpleTryUntilOk(5, () -> torqueCurrent.setUpdateFrequency(100.0, 0.0)); // TODO: Attempt to run these signals at 250Hz
         simpleTryUntilOk(
             5, () -> 
             BaseStatusSignal.setUpdateFrequencyForAll(
@@ -130,7 +130,7 @@ public class HoodIOHardware implements HoodIO {
             )
         );
 
-        simpleTryUntilOk(5, () -> motor.optimizeBusUtilization(0.0, 1.0));
+        simpleTryUntilOk(5, () -> motor.optimizeBusUtilization(0.0, 0.0));
 
         PhoenixUtility.registerSignals(
             false, 
@@ -179,10 +179,8 @@ public class HoodIOHardware implements HoodIO {
     @Override
     public void setPosition(double positionRadians) {
         motor.setControl(
-            motionMagicTorqueCurrentRequest
+            motionMagicRequest
                 .withPosition(Units.radiansToRotations(positionRadians))
-                .withOverrideCoastDurNeutral(false)
-                .withSlot(0)
         );
     }
 

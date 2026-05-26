@@ -37,13 +37,13 @@ public class Hood extends SubsystemBase {
 
     private static final LoggedTunableNumber kMinimumAngleDegrees = new LoggedTunableNumber("Hood/MinimumAngleDegrees", HoodConstants.kMinimumPosition.in(Degrees));
     private static final LoggedTunableNumber kMaximumAngleDegrees = new LoggedTunableNumber("Hood/MaximumAngleDegrees", HoodConstants.kMaximumPosition.in(Degrees));
-    
-    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Hood/Homing/Voltage", -2);
-    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Hood/Homing/VelocityThreshold", 0.06);
-    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Hood/Homing/TimeoutSeconds", 0.2);
 
-    private static final LoggedTunableNumber toleranceDegrees = new LoggedTunableNumber("Hood/ToleranceDegrees", 1.0);
-    private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Hood/ReadyDebounceSeconds", 0.08);
+    private static final LoggedTunableNumber kHomingVoltage = new LoggedTunableNumber("Hood/Homing/Voltage", -3);
+    private static final LoggedTunableNumber kHomingVelocityThreshold = new LoggedTunableNumber("Hood/Homing/VelocityThreshold", 0.06);
+    private static final LoggedTunableNumber kHomingTimeoutSeconds = new LoggedTunableNumber("Hood/Homing/TimeoutSeconds", 0.1);
+
+    private static final LoggedTunableNumber toleranceDegrees = new LoggedTunableNumber("Hood/ToleranceDegrees", 0.5);
+    private static final LoggedTunableNumber readyDebounceSeconds = new LoggedTunableNumber("Hood/ReadyDebounceSeconds", 0.06);
 
     static {
         switch (GlobalConstants.getRobot()) {
