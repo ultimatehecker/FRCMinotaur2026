@@ -57,6 +57,7 @@ public class Drivetrain extends SubsystemBase {
     private final SwerveRequest.SwerveDriveBrake brakeRequest = new SwerveRequest.SwerveDriveBrake();
     private final ApplyRobotSpeeds pathplannerRequest = new ApplyRobotSpeeds()
         .withDriveRequestType(SwerveModule.DriveRequestType.Velocity)
+        .withSteerRequestType(SwerveModule.SteerRequestType.MotionMagicExpo)
         .withDesaturateWheelSpeeds(true);
 
     private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;

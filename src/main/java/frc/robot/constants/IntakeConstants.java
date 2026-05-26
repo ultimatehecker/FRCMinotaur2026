@@ -1,6 +1,7 @@
 package frc.robot.constants;
 
 import static edu.wpi.first.units.Units.Amps;
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.KilogramSquareMeters;
 import static edu.wpi.first.units.Units.Kilograms;
@@ -24,8 +25,8 @@ public class IntakeConstants {
     public static final AngularVelocity kRollerMaximumRotationalVelocity = RadiansPerSecond.of(4.2);
     public static final AngularAcceleration kRollerMaximumRotationalAcceleration = RadiansPerSecondPerSecond.of(6.0);
 
-    public static final AngularVelocity kPivotMaximumRotationalVelocity = RotationsPerSecond.of(8);
-    public static final AngularAcceleration kPivotMaximumRotationalAcceleration = RotationsPerSecondPerSecond.of(24);
+    public static final AngularVelocity kPivotMaximumRotationalVelocity = RotationsPerSecond.of(8 / 3);
+    public static final AngularAcceleration kPivotMaximumRotationalAcceleration = RotationsPerSecondPerSecond.of(24 / 3);
     public static final double kPivotMaximumRotationalJerk = 0.0;
 
     public static final MinoCANDevice kPivotMotor = new MinoCANDevice(14, GlobalConstants.kRioBus);
@@ -35,9 +36,9 @@ public class IntakeConstants {
     public static final AngularVelocity kRollerIdleThreshold = RadiansPerSecond.of(150);
     public static final AngularVelocity kRollerStopThreshold = RadiansPerSecond.of(0.5);
 
-    public static final Angle kIntakeMinimumPosition = Radians.of(1.040216); //59.6 degrees
-    public static final Angle kIntakeMaximumPosition = Radians.of(3.270747); //187.4 degrees
-    public static final Angle kIntakeStartingPosition = Radians.of(1.040216);
+    public static final Angle kIntakeMinimumPosition = Degrees.of(59.6); //59.6 degrees
+    public static final Angle kIntakeMaximumPosition = Degrees.of(187.4); //187.4 degrees
+    public static final Angle kIntakeStartingPosition = Degrees.of(59.6);;
 
     public static final Angle kPivotAbsoluteEncoderOffset = Radians.of(-2.4908);
 
@@ -46,12 +47,12 @@ public class IntakeConstants {
     public static final MomentOfInertia kRollerMOI = MomentOfInertia.ofBaseUnits(0.0009, KilogramSquareMeters);
     public static final MomentOfInertia kPivotMOI = MomentOfInertia.ofBaseUnits(0.02, KilogramSquareMeters);
 
-    public static final double pivotkP = 175;
+    public static final double pivotkP = 5.0;
     public static final double pivotkI = 0.0;
-    public static final double pivotkD = 15.0;
-    public static final double pivotkS = 0.11;
+    public static final double pivotkD = 0.0;
+    public static final double pivotkS = 3.6;
     public static final double pivotkV = 0.0;
-    public static final double pivotkG = 0.35;
+    public static final double pivotkG = 6.9;
     public static final double pivotkA = 0.0;
 
     public static final boolean kPivotMotorInverted = false;

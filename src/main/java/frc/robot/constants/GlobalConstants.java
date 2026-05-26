@@ -20,7 +20,7 @@ public class GlobalConstants {
     public static final MinoCANBus kRioBus = new MinoCANBus("rio");
 
     public static final double kLoopPeriodSeconds = 0.02;
-    private static RobotType kRobotType = RobotType.SIMBOT;
+    private static RobotType kRobotType = RobotType.COMPBOT;
     public static final boolean kTuningMode = true;
 
     @SuppressWarnings("resource")

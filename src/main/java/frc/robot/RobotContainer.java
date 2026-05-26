@@ -34,12 +34,12 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 
+import frc.minolib.controller.ControllerConstants;
 import frc.minolib.controller.driverstation.OperatorButtonBoard;
 import frc.minolib.localization.WeightedPoseEstimate;
 import frc.minolib.utilities.AllianceFlipUtility;
 import frc.robot.command_factories.DrivetrainFactory;
 import frc.robot.command_factories.IntakeFactory;
-import frc.robot.constants.ControllerConstants;
 import frc.robot.constants.DrivetrainConstants;
 import frc.robot.constants.FieldConstants;
 import frc.robot.constants.GlobalConstants;
@@ -101,7 +101,7 @@ public class RobotContainer {
   private SwerveDriveSimulation driveSimulation = null;
 
   private Controlboard controlboard = Controlboard.getInstance();
-  private final OperatorButtonBoard primaryButtonBoard = new OperatorButtonBoard(ControllerConstants.kDriverControllerPort);
+  private final OperatorButtonBoard primaryButtonBoard = new OperatorButtonBoard(ControllerConstants.kDriverConsolePort);
   private final OperatorButtonBoard secondaryButtonBoard = new OperatorButtonBoard(ControllerConstants.kOperatorConsolePort);
 
   // Primary operator panel overrides
@@ -240,6 +240,10 @@ public class RobotContainer {
 
   public Intake getIntake() {
    return intake;
+  }
+
+  public Led getLeds() {
+    return led;
   }
 
   public RobotState getRobotState() {

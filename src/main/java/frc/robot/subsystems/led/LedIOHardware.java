@@ -5,6 +5,7 @@ import com.ctre.phoenix6.configs.CANdleFeaturesConfigs;
 import com.ctre.phoenix6.configs.LEDConfigs;
 import com.ctre.phoenix6.controls.ControlRequest;
 import com.ctre.phoenix6.controls.EmptyAnimation;
+import com.ctre.phoenix6.controls.RainbowAnimation;
 import com.ctre.phoenix6.controls.SolidColor;
 import com.ctre.phoenix6.hardware.CANdle;
 import com.ctre.phoenix6.signals.Enable5VRailValue;
@@ -51,6 +52,7 @@ public class LedIOHardware implements LedIO {
     @Override
     public void setControl(ControlRequest controlRequest) {
         candle.setControl(controlRequest);
+        candle.setControl(new RainbowAnimation(0, 0));
     }
 
     @Override
